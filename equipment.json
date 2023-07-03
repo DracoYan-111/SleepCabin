@@ -1,0 +1,41 @@
+{
+  "name": "SleepCabin:睡眠舱计划 #5565",
+  "description": [
+    "睡眠仓计划的详细信息"
+  ],
+  "attributes": [
+    {
+      "trait_type": "品质",
+      "value": "Myth"
+    },
+    {
+      "trait_type": "手持物",
+      "value": "无限手套/Myth"
+    },
+    {
+      "trait_type": "背景",
+      "value": "杜姆的空间/Myth"
+    },
+    {
+      "trait_type": "表情",
+      "value": "愤怒/Myth"
+    },
+    {
+      "trait_type": "服饰",
+      "value": "灭霸套装/Myth"
+    },
+    {
+      "trait_type": "头部",
+      "value": "灭霸头盔/Myth"
+    },
+    {
+      "trait_type": "背饰",
+      "value": "暴君双刃/Myth"
+    },
+    {
+      "trait_type": "身着物",
+      "value": "无限宝石/Myth"
+    }
+  ],
+  "image": "https://ipfs.io/ipfs/QmRsh5yE5qF6ge1KoVtBCCUv1YLvd9jJ7M7rdZ93NgzWCz?filename=mieba.webp"
+}
