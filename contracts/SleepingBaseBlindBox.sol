@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-    error NotYetOpeningTime();
-    error NotYetTradingTime();
+    error NotYetOpeningTime(uint256 currentTime);
+    error NotYetTradingTime(uint256 currentTime);
     error AlreadyClaimed();
     error InvalidProof();
 
@@ -44,38 +44,90 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         total = total_;
     }
 
-    function setURI(string memory tokenUri)
+    /**
+    * @dev Set open and sales time
+    * @notice Only used by Owner
+    * @param openAndSalesTime_ Open time and sales time
+    */
+    function setOpenAndSalesTime(uint256 openAndSalesTime_)
     public
     onlyOwner {
-        _setURI(tokenUri);
+        openAndSalesTime = openAndSalesTime_;
     }
 
+    /**
+    * @dev Lock transaction interface
+    * @notice Only used by Owner
+    */
     function pause()
     public
     onlyOwner {
         _pause();
     }
 
+    /**
+    * @dev Unlock transaction interface
+    * @notice Only used by Owner
+    */
     function unpause()
     public
     onlyOwner {
         _unpause();
     }
 
+    /**
+    * @dev Additional method
+    * @notice Called only on exception
+    * @param account Recipient address
+    * @param amount Receive quantity
+    */
     function mint(address account, uint256 amount)
     public
     onlyOwner {
         _mint(account, total, amount, "");
     }
 
-    function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data)
     internal
     whenNotPaused
     override {
-        (, uint256 salesTime) = _getIdAndRarity(openAndSalesTime);
-        if (block.timestamp <= salesTime) revert NotYetTradingTime();
         super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
     }
+
+    /**
+     * @dev See {IERC1155-safeTransferFrom}.
+     * @notice Increased unlock transaction time and lockable
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256,
+        uint256 amount,
+        bytes memory data)
+    public
+    virtual
+    override {
+        (, uint256 salesTime) = _getIdAndRarity(openAndSalesTime);
+        if (block.timestamp <= salesTime) revert NotYetTradingTime(block.timestamp);
+        super.safeTransferFrom(from, to, total, amount, data);
+    }
+
+    /**
+     * @dev See {IERC1155-safeBatchTransferFrom}.
+     */
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) public virtual override {}
 
     function _getIdAndRarity(uint256 data)
     private
@@ -85,7 +137,18 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         salesTime = uint128(data);
     }
 
-    // ===============
+    // ==================== Blind box related ====================
+
+
+
+
+
+    /**
+    * @dev Check if the index is picked up
+    * @notice Only returns whether it can be picked up
+    * @param index Merkle index location
+    * @return can receive
+    */
     function isClaimed(uint256 index)
     public
     view
@@ -104,25 +167,48 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
     }
 
-    function claim(uint256 index, address account, uint256 amount, bytes32[] calldata merkleProof)
+    /**
+    * @dev Use a Merkle claim
+    * @notice Only supports single pick-up
+    * @param index Merkle index location
+    * @param amount Quantity available
+    * @param merkleProof Merkel Leaf Proof
+    */
+    function claim(
+        uint256 index,
+        uint256 amount,
+        bytes32[] calldata merkleProof)
     public {
         if (isClaimed(index)) revert AlreadyClaimed();
 
         // Verify the merkle proof.
-        bytes32 node = keccak256(abi.encodePacked(index, account, amount));
+        bytes32 node = keccak256(abi.encodePacked(index, _msgSender(), amount));
         if (!MerkleProof.verify(merkleProof, merkleRoot, node)) revert InvalidProof();
 
         // Mark it claimed and send the token.
         _setClaimed(index);
-        _mint(account, total, amount, "");
-        emit Claimed(index, account, amount);
+        _mint(_msgSender(), total, amount, "");
+        emit Claimed(index, _msgSender(), amount);
     }
 
-    function openBox(uint256 amount, uint256[] memory tokenIds, string[] memory uris)
+    /**
+    * @dev Open blind box
+    * @notice It cannot be called before the time is up,
+    *         and the interface can be locked
+    * @param amount Open blind box quantity
+    * @param tokenIds Array of token ids to be issued
+    * @param uris Array of token uri to be issued
+    */
+    function openBox(
+        uint256 amount,
+        uint256[] memory tokenIds,
+        string[] memory uris)
     public
     whenNotPaused {
         (uint256 openingTime,) = _getIdAndRarity(openAndSalesTime);
-        if (block.timestamp <= openingTime) revert NotYetOpeningTime();
+        if (block.timestamp <= openingTime) revert NotYetOpeningTime(block.timestamp);
+
+        // Destroy the blind box first
         super._burn(_msgSender(), total, amount);
         for (uint256 i; i < tokenIds.length; ++i) {
             SleepingBase(mintNewNft).safeMint(_msgSender(), tokenIds, uris);
