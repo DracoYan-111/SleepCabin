@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {ERC721, ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-
-
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
 //  _____  _                     _               ______
 // /  ___|| |                   (_)              | ___ \
@@ -18,43 +15,49 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 //                       | |                __/ |
 //                       |_|               |___/
 
-contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, Ownable {
-
+contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, AccessControl {
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     mapping(uint256 => uint128) public tokenRarity;
 
-    constructor() ERC721("SleepingBase", "") {}
+    constructor() ERC721("SleepingBase", "") {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);}
 
     /**
     * @dev Pause token
     */
-    function pause() public onlyOwner {
+    function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
     /**
     * @dev Unpause token
     */
-    function unpause() public onlyOwner {
+    function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
     /**
     * @dev Mint token
     * @param to Address to
-    * @param tokenId Token id
-    * @param uri Token new uri
+    * @param tokenIds Token id
+    * @param uris Token new uri
     */
     function safeMint(
         address to,
-        uint256 tokenId,
-        string memory uri)
-    public
-    onlyOwner {
-        (uint256 onlyTokenId,uint128 onlyTokenRarity) = _getIdAndRarity(tokenId);
-        if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
-        _safeMint(to, onlyTokenId);
-        _setTokenURI(onlyTokenId, uri);
-        tokenRarity[onlyTokenId] = onlyTokenRarity;
+        uint256[] memory tokenIds,
+        string[] memory uris)
+    external
+    onlyRole(MINTER_ROLE) {
+        for (uint256 i; i < tokenIds.length; ++i) {
+            (uint256 onlyTokenId, uint128 onlyTokenRarity) = _getIdAndRarity(tokenIds[i]);
+            if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
+            _safeMint(to, onlyTokenId);
+            _setTokenURI(onlyTokenId, uris[i]);
+            tokenRarity[onlyTokenId] = onlyTokenRarity;
+        }
     }
 
     /**
@@ -63,7 +66,7 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, O
     */
     function safeBurn(uint256 tokenId)
     public
-    onlyOwner {
+    onlyRole(MINTER_ROLE) {
         super._burn(tokenId);
     }
 
@@ -74,7 +77,7 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, O
     */
     function steTokenUri(uint256 tokenId, string memory uri)
     public
-    onlyOwner
+    onlyRole(MINTER_ROLE)
     {
         _setTokenURI(tokenId, uri);
     }
@@ -125,7 +128,7 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, O
     function supportsInterface(bytes4 interfaceId)
     public
     view
-    override(ERC721, ERC721Enumerable, ERC721URIStorage)
+    override(ERC721, ERC721Enumerable, ERC721URIStorage, AccessControl)
     returns (bool){
         return super.supportsInterface(interfaceId);
     }

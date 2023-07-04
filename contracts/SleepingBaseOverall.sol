@@ -1,36 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {ERC721, ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-//  _____  _                     _____         _      _         _____                            _  _
-// /  ___|| |                   /  __ \       | |    (_)       |  _  |                          | || |
-// \ `--. | |  ___   ___  _ __  | /  \/  __ _ | |__   _  _ __  | | | |__   __  ___  _ __   __ _ | || |
-//  `--. \| | / _ \ / _ \| '_ \ | |     / _` || '_ \ | || '_ \ | | | |\ \ / / / _ \| '__| / _` || || |
-// /\__/ /| ||  __/|  __/| |_) || \__/\| (_| || |_) || || | | |\ \_/ / \ V / |  __/| |   | (_| || || |
-// \____/ |_| \___| \___|| .__/  \____/ \__,_||_.__/ |_||_| |_| \___/   \_/   \___||_|    \__,_||_||_|
-//                       | |
-//                       |_|
+// _____  _                     _               ______                    _____                            _  _
+///  ___|| |                   (_)              | ___ \                  |  _  |                          | || |
+//\ `--. | |  ___   ___  _ __   _  _ __    __ _ | |_/ /  __ _  ___   ___ | | | |__   __  ___  _ __   __ _ | || |
+// `--. \| | / _ \ / _ \| '_ \ | || '_ \  / _` || ___ \ / _` |/ __| / _ \| | | |\ \ / / / _ \| '__| / _` || || |
+///\__/ /| ||  __/|  __/| |_) || || | | || (_| || |_/ /| (_| |\__ \|  __/\ \_/ / \ V / |  __/| |   | (_| || || |
+//\____/ |_| \___| \___|| .__/ |_||_| |_| \__, |\____/  \__,_||___/ \___| \___/   \_/   \___||_|    \__,_||_||_|
+//                      | |                __/ |
+//                      |_|               |___/
 
-contract SleepCabinOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, Ownable {
 
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
+contract SleepingBaseOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, AccessControl {
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    mapping(uint256 => uint128) public tokenRarity;
+
+    constructor() ERC721("SleepingBaseOverall", "") {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);}
 
     /**
     * @dev Pause token
     */
-    function pause() public onlyOwner {
+    function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
     /**
     * @dev Unpause token
     */
-    function unpause() public onlyOwner {
+    function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
@@ -45,10 +51,12 @@ contract SleepCabinOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausab
         uint256 tokenId,
         string memory uri)
     public
-    onlyOwner {
-        if (_exists(tokenId) && ownerOf(tokenId) == to) safeBurn(tokenId);
-        _safeMint(to, tokenId);
-        _setTokenURI(tokenId, uri);
+    onlyRole(MINTER_ROLE) {
+        (uint256 onlyTokenId,uint128 onlyTokenRarity) = _getIdAndRarity(tokenId);
+        if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
+        _safeMint(to, onlyTokenId);
+        _setTokenURI(onlyTokenId, uri);
+        tokenRarity[onlyTokenId] = onlyTokenRarity;
     }
 
     /**
@@ -57,7 +65,7 @@ contract SleepCabinOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausab
     */
     function safeBurn(uint256 tokenId)
     public
-    onlyOwner {
+    onlyRole(MINTER_ROLE) {
         super._burn(tokenId);
     }
 
@@ -68,7 +76,7 @@ contract SleepCabinOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausab
     */
     function steTokenUri(uint256 tokenId, string memory uri)
     public
-    onlyOwner
+    onlyRole(MINTER_ROLE)
     {
         _setTokenURI(tokenId, uri);
     }
@@ -96,6 +104,13 @@ contract SleepCabinOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausab
         return (tokenIdArray, tokenUriArray);
     }
 
+    function _getIdAndRarity(uint256 data)
+    private
+    pure
+    returns (uint256 tokenId, uint128 rarity) {
+        tokenId = uint256(uint128(data >> 128));
+        rarity = uint128(data);
+    }
 
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);
@@ -112,7 +127,7 @@ contract SleepCabinOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausab
     function supportsInterface(bytes4 interfaceId)
     public
     view
-    override(ERC721, ERC721Enumerable, ERC721URIStorage)
+    override(ERC721, ERC721Enumerable, ERC721URIStorage, AccessControl)
     returns (bool){
         return super.supportsInterface(interfaceId);
     }
