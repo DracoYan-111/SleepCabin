@@ -210,14 +210,13 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         string[] memory uris)
     public
     whenNotPaused {
+        require(tokenIds.length == uris.length && uris.length == amount, "Invalid arguments");
         (uint256 openingTime,) = _getIdAndRarity(openAndSalesTime);
         if (block.timestamp <= openingTime) revert NotYetOpeningTime(block.timestamp);
 
         // Destroy the blind box first
         super._burn(_msgSender(), total, amount);
-        for (uint256 i; i < tokenIds.length; ++i) {
-            SleepingBase(mintNewNft).safeMint(_msgSender(), tokenIds, uris);
-        }
+        SleepingBase(mintNewNft).safeMint(_msgSender(), tokenIds, uris);
     }
 }
 
