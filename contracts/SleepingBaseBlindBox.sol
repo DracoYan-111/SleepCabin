@@ -1,10 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import {ERC1155, ERC1155Burnable} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+
+// _____  _                     _               ______                   ______  _  _             _ ______
+///  ___|| |                   (_)              | ___ \                  | ___ \| |(_)           | || ___ \
+//\ `--. | |  ___   ___  _ __   _  _ __    __ _ | |_/ /  __ _  ___   ___ | |_/ /| | _  _ __    __| || |_/ /  ___  __  __
+// `--. \| | / _ \ / _ \| '_ \ | || '_ \  / _` || ___ \ / _` |/ __| / _ \| ___ \| || || '_ \  / _` || ___ \ / _ \ \ \/ /
+///\__/ /| ||  __/|  __/| |_) || || | | || (_| || |_/ /| (_| |\__ \|  __/| |_/ /| || || | | || (_| || |_/ /| (_) | >  <
+//\____/ |_| \___| \___|| .__/ |_||_| |_| \__, |\____/  \__,_||___/ \___|\____/ |_||_||_| |_| \__,_|\____/  \___/ /_/\_\
+//                      | |                __/ |
+//                      |_|               |___/
 
     error NotYetOpeningTime(uint256 currentTime);
     error NotYetTradingTime(uint256 currentTime);
@@ -12,11 +21,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
     error InvalidProof();
 
 interface SleepingBase {
-    function safeMint(
-        address to,
-        uint256[] memory tokenIds,
-        string[] memory uris)
-    external;
+    function safeMint(address to, uint256[] memory tokenIds, string[] memory uris) external;
 }
 
 contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {

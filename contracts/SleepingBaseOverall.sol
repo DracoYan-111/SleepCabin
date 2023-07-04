@@ -15,7 +15,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 //                      | |                __/ |
 //                      |_|               |___/
 
-
 contract SleepingBaseOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
