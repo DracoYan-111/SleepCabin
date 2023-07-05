@@ -19,6 +19,8 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    mapping(uint256 => uint256) private tokenAttributes;
+
     constructor() ERC721("SleepingBase", "") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
@@ -51,10 +53,11 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
     external
     onlyRole(MINTER_ROLE) {
         for (uint256 i; i < tokenIds.length; ++i) {
-            (uint256 onlyTokenId,,,,) = getIdAndAttributes(tokenIds[i]);
+            (uint256 onlyTokenId) = getTokenId(tokenIds[i]);
             if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
             _safeMint(to, onlyTokenId);
             _setTokenURI(onlyTokenId, uris[i]);
+            tokenAttributes[onlyTokenId] = tokenIds[i];
         }
     }
 
@@ -103,11 +106,18 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
         return (tokenIdArray, tokenUriArray);
     }
 
-    function getIdAndAttributes(uint256 data)
+    function getTokenId(uint256 data)
     public
     pure
-    returns (uint256 tokenId, uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue) {
+    returns (uint256 tokenId){
         tokenId = data >> 192;
+    }
+
+    function getIdAndAttributes(uint256 onlyTokenId)
+    external
+    view
+    returns (uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue) {
+        uint256 data = tokenAttributes[onlyTokenId];
         rarityValue = (data >> 128) & ((1 << 64) - 1);
         moodValue = (data >> 96) & ((1 << 32) - 1);
         luckyValue = (data >> 64) & ((1 << 32) - 1);
