@@ -51,7 +51,7 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
     external
     onlyRole(MINTER_ROLE) {
         for (uint256 i; i < tokenIds.length; ++i) {
-            (uint256 onlyTokenId,,,,) = getIdAndRarity(tokenIds[i]);
+            (uint256 onlyTokenId,,,,) = getIdAndAttributes(tokenIds[i]);
             if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
             _safeMint(to, onlyTokenId);
             _setTokenURI(onlyTokenId, uris[i]);
@@ -103,7 +103,7 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
         return (tokenIdArray, tokenUriArray);
     }
 
-    function getIdAndRarity(uint256 data)
+    function getIdAndAttributes(uint256 data)
     public
     pure
     returns (uint256 tokenId, uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue) {
