@@ -27,6 +27,7 @@ interface SleepingBase {
 contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     // This event is triggered whenever a call to #claim succeeds.
     event Claimed(uint256 index, address account, uint256 amount);
+    event OpenBox(uint256 openTime, address userAddress, uint256 amount);
 
     // This is a packed array of booleans.
     mapping(uint256 => uint256) private claimedBitMap;
@@ -58,6 +59,17 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     public
     onlyOwner {
         openAndSalesTime = openAndSalesTime_;
+    }
+
+    /**
+    * @dev Set merkle root
+    * @notice Only used by Owner
+    * @param merkleRoot_ Merkle root prove
+    */
+    function setMerkleRoot(bytes32 merkleRoot_)
+    public
+    onlyOwner {
+        merkleRoot = merkleRoot_;
     }
 
     /**
@@ -144,10 +156,6 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
 
     // ==================== Blind box related ====================
 
-
-
-
-
     /**
     * @dev Check if the index is picked up
     * @notice Only returns whether it can be picked up
@@ -210,6 +218,7 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         string[] memory uris)
     public
     whenNotPaused {
+        require(super.balanceOf(_msgSender(), total) >= amount, "Insufficient balance");
         require(tokenIds.length == uris.length && uris.length == amount, "Invalid arguments");
         (uint256 openingTime,) = _getIdAndRarity(openAndSalesTime);
         if (block.timestamp <= openingTime) revert NotYetOpeningTime(block.timestamp);
@@ -217,6 +226,8 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         // Destroy the blind box first
         super._burn(_msgSender(), total, amount);
         SleepingBase(mintNewNft).safeMint(_msgSender(), tokenIds, uris);
+
+        emit OpenBox(block.timestamp, _msgSender(), amount);
     }
 }
 
