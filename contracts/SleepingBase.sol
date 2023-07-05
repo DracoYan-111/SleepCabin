@@ -18,7 +18,6 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, AccessControl {
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    mapping(uint256 => uint128) public tokenRarity;
 
     constructor() ERC721("SleepingBase", "") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -52,11 +51,10 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
     external
     onlyRole(MINTER_ROLE) {
         for (uint256 i; i < tokenIds.length; ++i) {
-            (uint256 onlyTokenId, uint128 onlyTokenRarity) = _getIdAndRarity(tokenIds[i]);
+            (uint256 onlyTokenId,,,,) = getIdAndRarity(tokenIds[i]);
             if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
             _safeMint(to, onlyTokenId);
             _setTokenURI(onlyTokenId, uris[i]);
-            tokenRarity[onlyTokenId] = onlyTokenRarity;
         }
     }
 
@@ -105,12 +103,15 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
         return (tokenIdArray, tokenUriArray);
     }
 
-    function _getIdAndRarity(uint256 data)
-    private
+    function getIdAndRarity(uint256 data)
+    public
     pure
-    returns (uint256 tokenId, uint128 rarity) {
-        tokenId = uint256(uint128(data >> 128));
-        rarity = uint128(data);
+    returns (uint256 tokenId, uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue) {
+        tokenId = data >> 192;
+        rarityValue = (data >> 128) & ((1 << 64) - 1);
+        moodValue = (data >> 96) & ((1 << 32) - 1);
+        luckyValue = (data >> 64) & ((1 << 32) - 1);
+        comfortValue = data & ((1 << 64) - 1);
     }
 
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
