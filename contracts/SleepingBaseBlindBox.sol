@@ -31,7 +31,7 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
 
     // This is a packed array of booleans.
     mapping(uint256 => uint256) private claimedBitMap;
-    bytes32 public immutable merkleRoot;
+    bytes32 public merkleRoot;
     // This is a compressed value of the turn-on time and transition time
     uint256 public openAndSalesTime;
     address public mintNewNft;
