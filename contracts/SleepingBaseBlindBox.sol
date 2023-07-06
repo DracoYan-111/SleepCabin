@@ -6,14 +6,9 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-// _____  _                     _               ______                   ______  _  _             _ ______
-///  ___|| |                   (_)              | ___ \                  | ___ \| |(_)           | || ___ \
-//\ `--. | |  ___   ___  _ __   _  _ __    __ _ | |_/ /  __ _  ___   ___ | |_/ /| | _  _ __    __| || |_/ /  ___  __  __
-// `--. \| | / _ \ / _ \| '_ \ | || '_ \  / _` || ___ \ / _` |/ __| / _ \| ___ \| || || '_ \  / _` || ___ \ / _ \ \ \/ /
-///\__/ /| ||  __/|  __/| |_) || || | | || (_| || |_/ /| (_| |\__ \|  __/| |_/ /| || || | | || (_| || |_/ /| (_) | >  <
-//\____/ |_| \___| \___|| .__/ |_||_| |_| \__, |\____/  \__,_||___/ \___|\____/ |_||_||_| |_| \__,_|\____/  \___/ /_/\_\
-//                      | |                __/ |
-//                      |_|               |___/
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
+// |S| |l| |e| |e| |p| |i| |n| |g| |B| |a| |s| |e| |B| |l| |i| |n| |d| |B| |o| |x|
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
 
     error NotYetOpeningTime(uint256 currentTime);
     error NotYetTradingTime(uint256 currentTime);
@@ -25,30 +20,37 @@ interface SleepingBase {
 }
 
 contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
-    // This event is triggered whenever a call to #claim succeeds.
+    /* ========== EVENTS ========== */
+
     event Claimed(uint256 index, address account, uint256 amount);
     event OpenBox(uint256 openTime, address userAddress, uint256 amount);
+
+    /* ========== STATE VARIABLES ========== */
 
     // This is a packed array of booleans.
     mapping(uint256 => uint256) private claimedBitMap;
     bytes32 public merkleRoot;
     // This is a compressed value of the turn-on time and transition time
-    uint256 public openAndSalesTime;
-    address public mintNewNft;
-    uint256 public total;
+    uint256 private openAndSalesTime;
+    SleepingBase public sleepingBase;
+    uint256 public totalId;
+
+    /* ========== CONSTRUCTOR ========== */
 
     constructor(
+        SleepingBase sleepingBase_,
         uint256 openAndSalesTime_,
         string memory tokenUri_,
-        address mintNewNft_,
         bytes32 merkleRoot_,
-        uint256 total_
+        uint256 totalId_
     )ERC1155(tokenUri_) {
         openAndSalesTime = openAndSalesTime_;
+        sleepingBase = sleepingBase_;
         merkleRoot = merkleRoot_;
-        mintNewNft = mintNewNft_;
-        total = total_;
+        totalId = totalId_;
     }
+
+    /* ========== RESTRICTED FUNCTIONS ========== */
 
     /**
     * @dev Set open and sales time
@@ -101,8 +103,90 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     function mint(address account, uint256 amount)
     public
     onlyOwner {
-        _mint(account, total, amount, "");
+        _mint(account, totalId, amount, "");
     }
+
+    /* ========== MUTATIVE FUNCTIONS ========== */
+
+    /**
+    * @dev Use a Merkle claim
+    * @notice Only supports single pick-up
+    * @param index Merkle index location
+    * @param amount Quantity available
+    * @param merkleProof Merkel Leaf Proof
+    */
+    function claim(
+        uint256 index,
+        uint256 amount,
+        bytes32[] calldata merkleProof)
+    public {
+        if (isClaimed(index)) revert AlreadyClaimed();
+
+        // Verify the merkle proof.
+        bytes32 node = keccak256(abi.encodePacked(index, _msgSender(), amount));
+        if (!MerkleProof.verify(merkleProof, merkleRoot, node))
+            revert InvalidProof();
+
+        // Mark it claimed and send the token.
+        _setClaimed(index);
+        _mint(_msgSender(), totalId, amount, "");
+        emit Claimed(index, _msgSender(), amount);
+    }
+
+    /**
+    * @dev Open blind box
+    * @notice It cannot be called before the time is up,
+    *         and the interface can be locked
+    * @param amount Open blind box quantity
+    * @param tokenIds Array of token ids to be issued
+    * @param uris Array of token uri to be issued
+    */
+    function openBox(
+        uint256 amount,
+        uint256[] memory tokenIds,
+        string[] memory uris)
+    public
+    whenNotPaused {
+        require(super.balanceOf(_msgSender(), totalId) >= amount, "Insufficient balance");
+        require(tokenIds.length == uris.length && uris.length == amount, "Invalid arguments");
+        (uint256 openingTime,) = _getIdAndRarity(openAndSalesTime);
+        if (block.timestamp <= openingTime)
+            revert NotYetOpeningTime(block.timestamp);
+
+        // Destroy the blind box first
+        super._burn(_msgSender(), totalId, amount);
+        sleepingBase.safeMint(_msgSender(), tokenIds, uris);
+
+        emit OpenBox(block.timestamp, _msgSender(), amount);
+    }
+
+    /* ========== VIEWS FUNCTION ========== */
+
+    /**
+    * @dev Check if the index is picked up
+    * @notice Only returns whether it can be picked up
+    * @param index Merkle index location
+    * @return can receive
+    */
+    function isClaimed(uint256 index)
+    public
+    view
+    returns (bool){
+        uint256 claimedWordIndex = index / 256;
+        uint256 claimedBitIndex = index % 256;
+        uint256 claimedWord = claimedBitMap[claimedWordIndex];
+        uint256 mask = (1 << claimedBitIndex);
+        return claimedWord & mask == mask;
+    }
+
+    function _setClaimed(uint256 index)
+    private {
+        uint256 claimedWordIndex = index / 256;
+        uint256 claimedBitIndex = index % 256;
+        claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
+    }
+
+    /* ========== OVERRIDE FUNCTIONS ========== */
 
     function _beforeTokenTransfer(
         address operator,
@@ -132,7 +216,7 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     override {
         (, uint256 salesTime) = _getIdAndRarity(openAndSalesTime);
         if (block.timestamp <= salesTime) revert NotYetTradingTime(block.timestamp);
-        super.safeTransferFrom(from, to, total, amount, data);
+        super.safeTransferFrom(from, to, totalId, amount, data);
     }
 
     /**
@@ -154,80 +238,5 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         salesTime = uint128(data);
     }
 
-    // ==================== Blind box related ====================
-
-    /**
-    * @dev Check if the index is picked up
-    * @notice Only returns whether it can be picked up
-    * @param index Merkle index location
-    * @return can receive
-    */
-    function isClaimed(uint256 index)
-    public
-    view
-    returns (bool){
-        uint256 claimedWordIndex = index / 256;
-        uint256 claimedBitIndex = index % 256;
-        uint256 claimedWord = claimedBitMap[claimedWordIndex];
-        uint256 mask = (1 << claimedBitIndex);
-        return claimedWord & mask == mask;
-    }
-
-    function _setClaimed(uint256 index)
-    private {
-        uint256 claimedWordIndex = index / 256;
-        uint256 claimedBitIndex = index % 256;
-        claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
-    }
-
-    /**
-    * @dev Use a Merkle claim
-    * @notice Only supports single pick-up
-    * @param index Merkle index location
-    * @param amount Quantity available
-    * @param merkleProof Merkel Leaf Proof
-    */
-    function claim(
-        uint256 index,
-        uint256 amount,
-        bytes32[] calldata merkleProof)
-    public {
-        if (isClaimed(index)) revert AlreadyClaimed();
-
-        // Verify the merkle proof.
-        bytes32 node = keccak256(abi.encodePacked(index, _msgSender(), amount));
-        if (!MerkleProof.verify(merkleProof, merkleRoot, node)) revert InvalidProof();
-
-        // Mark it claimed and send the token.
-        _setClaimed(index);
-        _mint(_msgSender(), total, amount, "");
-        emit Claimed(index, _msgSender(), amount);
-    }
-
-    /**
-    * @dev Open blind box
-    * @notice It cannot be called before the time is up,
-    *         and the interface can be locked
-    * @param amount Open blind box quantity
-    * @param tokenIds Array of token ids to be issued
-    * @param uris Array of token uri to be issued
-    */
-    function openBox(
-        uint256 amount,
-        uint256[] memory tokenIds,
-        string[] memory uris)
-    public
-    whenNotPaused {
-        require(super.balanceOf(_msgSender(), total) >= amount, "Insufficient balance");
-        require(tokenIds.length == uris.length && uris.length == amount, "Invalid arguments");
-        (uint256 openingTime,) = _getIdAndRarity(openAndSalesTime);
-        if (block.timestamp <= openingTime) revert NotYetOpeningTime(block.timestamp);
-
-        // Destroy the blind box first
-        super._burn(_msgSender(), total, amount);
-        SleepingBase(mintNewNft).safeMint(_msgSender(), tokenIds, uris);
-
-        emit OpenBox(block.timestamp, _msgSender(), amount);
-    }
 }
 

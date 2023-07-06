@@ -3,27 +3,30 @@ pragma solidity ^0.8.9;
 
 import {ERC721, ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
-// _____  _                     _               ______                    _____                            _  _
-///  ___|| |                   (_)              | ___ \                  |  _  |                          | || |
-//\ `--. | |  ___   ___  _ __   _  _ __    __ _ | |_/ /  __ _  ___   ___ | | | |__   __  ___  _ __   __ _ | || |
-// `--. \| | / _ \ / _ \| '_ \ | || '_ \  / _` || ___ \ / _` |/ __| / _ \| | | |\ \ / / / _ \| '__| / _` || || |
-///\__/ /| ||  __/|  __/| |_) || || | | || (_| || |_/ /| (_| |\__ \|  __/\ \_/ / \ V / |  __/| |   | (_| || || |
-//\____/ |_| \___| \___|| .__/ |_||_| |_| \__, |\____/  \__,_||___/ \___| \___/   \_/   \___||_|    \__,_||_||_|
-//                      | |                __/ |
-//                      |_|               |___/
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
+// |S| |l| |e| |e| |p| |i| |n| |g| |B| |a| |s| |e| |O| |v| |e| |r| |a| |l| |l|
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
 
-contract SleepingBaseOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, AccessControl {
+contract SleepingBaseOverall is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC721URIStorage {
+    /* ========== STATE VARIABLES ========== */
+
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    mapping(uint256 => uint128) public tokenRarity;
+
+    mapping(uint256 => uint256) private tokenAttributes;
+
+    /* ========== CONSTRUCTOR ========== */
 
     constructor() ERC721("SleepingBaseOverall", "") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);}
+
+
+    /* ========== RESTRICTED FUNCTIONS ========== */
 
     /**
     * @dev Pause token
@@ -42,20 +45,22 @@ contract SleepingBaseOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Paus
     /**
     * @dev Mint token
     * @param to Address to
-    * @param tokenId Token id
-    * @param uri Token new uri
+    * @param tokenIds Token id
+    * @param uris Token new uri
     */
     function safeMint(
         address to,
-        uint256 tokenId,
-        string memory uri)
-    public
+        uint256[] memory tokenIds,
+        string[] memory uris)
+    external
     onlyRole(MINTER_ROLE) {
-        (uint256 onlyTokenId,uint128 onlyTokenRarity) = _getIdAndRarity(tokenId);
-        if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
-        _safeMint(to, onlyTokenId);
-        _setTokenURI(onlyTokenId, uri);
-        tokenRarity[onlyTokenId] = onlyTokenRarity;
+        for (uint256 i; i < tokenIds.length; ++i) {
+            (uint256 onlyTokenId) = _getTokenId(tokenIds[i]);
+            if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
+            _safeMint(to, onlyTokenId);
+            _setTokenURI(onlyTokenId, uris[i]);
+            tokenAttributes[onlyTokenId] = tokenIds[i];
+        }
     }
 
     /**
@@ -80,7 +85,7 @@ contract SleepingBaseOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Paus
         _setTokenURI(tokenId, uri);
     }
 
-    // The following functions are overrides required by Solidity.
+    /* ========== VIEWS FUNCTION ========== */
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
     internal
@@ -103,13 +108,32 @@ contract SleepingBaseOverall is ERC721, ERC721Enumerable, ERC721URIStorage, Paus
         return (tokenIdArray, tokenUriArray);
     }
 
-    function _getIdAndRarity(uint256 data)
+    function _getTokenId(uint256 data)
     private
     pure
-    returns (uint256 tokenId, uint128 rarity) {
-        tokenId = uint256(uint128(data >> 128));
-        rarity = uint128(data);
+    returns (uint256 tokenId){
+        tokenId = data >> 192;
     }
+
+    function getIdAndAttributes(uint256 onlyTokenId)
+    external
+    view
+    returns (uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue) {
+        uint256 data = tokenAttributes[onlyTokenId];
+        rarityValue = (data >> 128) & ((1 << 64) - 1);
+        moodValue = (data >> 96) & ((1 << 32) - 1);
+        luckyValue = (data >> 64) & ((1 << 32) - 1);
+        comfortValue = data & ((1 << 64) - 1);
+    }
+
+    function getTokenAttributes(uint256 onlyTokenId)
+    external
+    view
+    returns (uint256 data){
+        data = tokenAttributes[onlyTokenId];
+    }
+
+    /* ========== OVERRIDE FUNCTION ========== */
 
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);

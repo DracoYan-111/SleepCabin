@@ -14,136 +14,142 @@ import "xdeployer";
 
 
 const config: HardhatUserConfig = {
-  // 网络配置
-  networks: {
-    // hardhat 默认网络
-    hardhat: {},
-    // 本地环境
-    local: {
-      url: "http://127.0.0.1:8545",
-      // 链接时长
-      timeout: 40000,
-      // 账户配置
-      accounts: {
-        mnemonic: "test test test test test test test test test test test junk",
-        path: "m/44'/60'/0'/0",
-        initialIndex: 0,
-        count: 10
-      }
-    },
-    bscMain: {
-      url: "https://bsc-dataseed1.binance.org",
-      accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
-    },
-    bscTest: {
-      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-      accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
-    },
-    mainnet: {
-      url: "https://eth.llamarpc.com",
-      chainId: 1,
-      accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
-    }
-  },
-  // 合约版本
-  solidity: {
-    // 多版本
-    compilers: [
-      {
-        version: "0.8.19",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 999999
-          }
+    // 网络配置
+    networks: {
+        // hardhat 默认网络
+        hardhat: {},
+        // 本地环境
+        local: {
+            url: "http://127.0.0.1:8545",
+            // 链接时长
+            timeout: 40000,
+            // 账户配置
+            accounts: {
+                mnemonic: "test test test test test test test test test test test junk",
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 10
+            }
+        },
+        bscMain: {
+            url: "https://bsc-dataseed1.binance.org",
+            accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
+        },
+        bscTest: {
+            url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+            accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
+        },
+        mainnet: {
+            url: "https://eth.llamarpc.com",
+            chainId: 1,
+            accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
         }
-      },
-      {
-        version: "0.8.8",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 999999
-          }
-        }
-      },
-      {
-        version: "0.8.9",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 999999
-          }
-        }
-      }
-    ]
-  },
-  // 预定义角色的帐户
-  namedAccounts: {
-    deployer: 0,
-    owner: 1,
-    spender: 2
-  },
-  // gas记者
-  gasReporter: {
-    // 是否开启
-    enabled: true,
-    // 法币
-    currency: "USD",
-    // 代币
-    token: "ETH",
-    //动态的gasPrice
-    gasPriceApi: "https://arb-mainnet.g.alchemy.com/v2/e8OnpHbOynTJP3ObzoC1hCCGDM6i9LGG",
-    // gas记者文件生成
-    outputFile: "gas-report.txt",
-  },
-  // 合约大小
-  contractSizer: {
-    //按字母顺序对结果排序
-    alphaSort: true,
-    // 编译后是否自动输出合约大小
-    runOnCompile: true,
-    // 超过大小限制是否抛出错误
-    strict: true,
-    // 输出合约大小
-    outputFile: "otherFiles/contract-size-report.txt",
-  },
-  // 文件路径
-  paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts",
-    deploy: "./deploy"
-  },
-  // abi导出
-  abiExporter: {
-    path: "otherFiles/abi/",
-    runOnCompile: true,
-    clear: true,
+    },
+    // 合约版本
+    solidity: {
+        // 多版本
+        compilers: [
+            {
+                version: "0.8.19",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999999
+                    }
+                }
+            },
+            {
+                version: "0.8.8",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999999
+                    }
+                }
+            },
+            {
+                version: "0.8.9",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 999999
+                    }
+                }
+            }
+        ]
+    },
+    // 预定义角色的帐户
+    namedAccounts: {
+        deployer: 0,
+        owner: 1,
+        spender: 2
+    },
+    // gas记者
+    gasReporter: {
+        // 是否开启
+        enabled: true,
+        // 没有颜色
+        noColors: true,
+        // 显示运行时间
+        showTimeSpent: true,
 
-  },
-  // 接口文档导出
-  docgen: {
-    path: "otherFiles/document/interfaceDoc",
-    clear: true,
-    runOnCompile: true
-  },
-  // 自动化开源
-  etherscan: {
-    apiKey: {
-      mainnet: "5FR6FYW54DDPAHYDWVP42G9TTTTKHETPWE",
+        // 法币
+        currency: "USD",
+        // 代币
+        token: "ETH",
+        //动态的gasPrice
+        gasPriceApi: "https://arb-mainnet.g.alchemy.com/v2/e8OnpHbOynTJP3ObzoC1hCCGDM6i9LGG",
+        // gas记者文件生成
+        outputFile: "otherFiles/gas-report.txt",
+
+    },
+    // 合约大小
+    contractSizer: {
+        //按字母顺序对结果排序
+        alphaSort: true,
+        // 编译后是否自动输出合约大小
+        runOnCompile: false,
+        // 超过大小限制是否抛出错误
+        strict: true,
+        // 输出合约大小
+        outputFile: "otherFiles/contract-size-report.txt",
+    },
+    // 文件路径
+    paths: {
+        sources: "./contracts",
+        tests: "./test",
+        cache: "./cache",
+        artifacts: "./artifacts",
+        deploy: "./deploy"
+    },
+    // abi导出
+    abiExporter: {
+        path: "otherFiles/abi/",
+        runOnCompile: true,
+        clear: true,
+
+    },
+    // 接口文档导出
+    docgen: {
+        path: "otherFiles/document/interfaceDoc",
+        clear: true,
+        runOnCompile: true
+    },
+    // 自动化开源
+    etherscan: {
+        apiKey: {
+            mainnet: "",
+        }
+    },
+    // 多链同地址部署
+    xdeploy: {
+        contract: "SwapAndDestroyMain",
+        salt: "0x23e6EA497EFAAa53c40c3aD6de3c053EaE76793e24D10edA9EDd20885e361F",
+        signer: "0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231",
+        networks: ["hardhat", "bscTestnet"],
+        rpcUrls: ["hardhat", "https://data-seed-prebsc-1-s1.binance.org:8545"],
+        gasLimit: 5100000,
     }
-  },
-  // 多链同地址部署
-  xdeploy: {
-    contract: "SwapAndDestroyMain",
-    salt: "0x23e6EA497EFAAa53c40c3aD6de3c053EaE76793e24D10edA9EDd20885e361F",
-    signer: "0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231",
-    networks: ["hardhat", "bscTestnet"],
-    rpcUrls: ["hardhat", "https://data-seed-prebsc-1-s1.binance.org:8545"],
-    gasLimit: 5100000,
-  }
 
 
 };

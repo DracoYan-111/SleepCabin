@@ -3,28 +3,30 @@ pragma solidity ^0.8.9;
 
 import {ERC721, ERC721Enumerable} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 
-//  _____  _                     _               ______
-// /  ___|| |                   (_)              | ___ \
-// \ `--. | |  ___   ___  _ __   _  _ __    __ _ | |_/ /  __ _  ___   ___
-//  `--. \| | / _ \ / _ \| '_ \ | || '_ \  / _` || ___ \ / _` |/ __| / _ \
-// /\__/ /| ||  __/|  __/| |_) || || | | || (_| || |_/ /| (_| |\__ \|  __/
-// \____/ |_| \___| \___|| .__/ |_||_| |_| \__, |\____/  \__,_||___/ \___|
-//                       | |                __/ |
-//                       |_|               |___/
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
+// |S| |l| |e| |e| |p| |i| |n| |g| |B| |a| |s| |e|
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
 
-contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, AccessControl {
+contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC721URIStorage {
+    /* ========== STATE VARIABLES ========== */
+
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     mapping(uint256 => uint256) private tokenAttributes;
 
+    /* ========== CONSTRUCTOR ========== */
+
     constructor() ERC721("SleepingBase", "") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);}
+
+
+    /* ========== RESTRICTED FUNCTIONS ========== */
 
     /**
     * @dev Pause token
@@ -53,7 +55,7 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
     external
     onlyRole(MINTER_ROLE) {
         for (uint256 i; i < tokenIds.length; ++i) {
-            (uint256 onlyTokenId) = getTokenId(tokenIds[i]);
+            (uint256 onlyTokenId) = _getTokenId(tokenIds[i]);
             if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
             _safeMint(to, onlyTokenId);
             _setTokenURI(onlyTokenId, uris[i]);
@@ -83,7 +85,7 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
         _setTokenURI(tokenId, uri);
     }
 
-    // The following functions are overrides required by Solidity.
+    /* ========== VIEWS FUNCTION ========== */
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
     internal
@@ -106,8 +108,8 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
         return (tokenIdArray, tokenUriArray);
     }
 
-    function getTokenId(uint256 data)
-    public
+    function _getTokenId(uint256 data)
+    private
     pure
     returns (uint256 tokenId){
         tokenId = data >> 192;
@@ -123,6 +125,15 @@ contract SleepingBase is ERC721, ERC721Enumerable, ERC721URIStorage, Pausable, A
         luckyValue = (data >> 64) & ((1 << 32) - 1);
         comfortValue = data & ((1 << 64) - 1);
     }
+
+    function getTokenAttributes(uint256 onlyTokenId)
+    external
+    view
+    returns (uint256 data){
+        data = tokenAttributes[onlyTokenId];
+    }
+
+    /* ========== OVERRIDE FUNCTION ========== */
 
     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);

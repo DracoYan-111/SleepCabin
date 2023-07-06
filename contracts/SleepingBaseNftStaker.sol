@@ -9,24 +9,30 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
-    error CannotStakeZero();
-    error CannotWithdrawZero();
-    error ProvidedRewardHigh();
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
+// |S| |l| |e| |e| |p| |i| |n| |g| |B| |a| |s| |e| |N| |f| |t| |S| |t| |a| |k| |e| |r|
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
+
 interface SleepingBase {
     function getIdAndAttributes(uint256 onlyTokenId) external pure returns (uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue);
 }
+
+    error CannotWithdraw(address userAddress, uint256 tokenId);
+    error CannotStakeFree(uint256 tokenId);
 
 contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
     /* ========== EVENTS ========== */
+
     event RewardAdded(uint256 reward);
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
 
     /* ========== MODIFIERS ========== */
+
     modifier updateReward(address account) {
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = lastTimeRewardApplicable();
@@ -43,6 +49,7 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
     }
 
     /* ========== STATE VARIABLES ========== */
+
     IERC20 public rewardsToken;
     IERC721 public stakingToken;
 
@@ -50,110 +57,37 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
     uint256 public periodFinish = 0;
     uint256 public rewardsDuration = 60 days;
 
-    uint256 private _totalSupply;
     uint256 public lastUpdateTime;
     address public rewardsDistribution;
     uint256 public rewardPerTokenStored;
 
+    uint256[] public weightFactor;
+
     mapping(address => uint256) public rewards;
-    mapping(address => uint256) private _balances;
     mapping(address => uint256) public nftBalances;
     mapping(address => uint256) public userRewardPerTokenPaid;
+
+    uint256 private _totalSupply;
+    mapping(address => uint256) private _balances;
     // Mapping from token ID to index of the owner tokens list
     mapping(uint256 => uint256) private _ownedTokensIndex;
     // Mapping from owner to list of owned token IDs
     mapping(address => mapping(uint256 => uint256)) private _ownedTokens;
 
-    uint256[] public weightFactor;
 
     /* ========== CONSTRUCTOR ========== */
+
     constructor(
         uint256[] memory weightFactor_,
-        address _rewardsDistribution,
         address _rewardsToken,
         address _stakingToken
     )  {
         weightFactor = weightFactor_;
         rewardsToken = IERC20(_rewardsToken);
         stakingToken = IERC721(_stakingToken);
-        rewardsDistribution = _rewardsDistribution;
+        rewardsDistribution = _msgSender();
     }
 
-    /* ========== VIEWS ========== */
-    //
-    //    function totalSupply() external view returns (uint256) {
-    //        return _totalSupply;
-    //    }
-
-    //    function balanceOf(address account) external view returns (uint256) {
-    //        return _balances[account];
-    //    }
-
-    function lastTimeRewardApplicable()
-    public
-    view
-    returns (uint256) {
-        return Math.min(block.timestamp, periodFinish);
-    }
-
-    function rewardPerToken()
-    public
-    view
-    returns (uint256) {
-        if (_totalSupply == 0) {
-            return rewardPerTokenStored;
-        }
-        return
-        rewardPerTokenStored.add(
-            lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
-        );
-    }
-
-    function earned(address account)
-    public
-    view
-    returns (uint256) {
-        return _balances[account].mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]);
-    }
-
-    function getRewardForDuration()
-    external
-    view
-    returns (uint256) {
-        return rewardRate.mul(rewardsDuration);
-    }
-
-    function getNftRaritySum(uint256[] memory tokenIds)
-    private
-    view
-    returns (uint256 raritySum){
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            (uint256 rarityValue,
-            uint256 moodValue,
-            uint256 luckyValue,
-            uint256 comfortValue) = SleepingBase(address(stakingToken)).getIdAndAttributes(tokenIds[i]);
-
-            require(rarityValue > 1, "");
-
-            uint256 onlyRarityValue = rarityValue.mul(25);
-            uint256 onlyMoodValue = moodValue.sub(moodValue.mul(weightFactor[0]).div(1000));
-            uint256 onlyLuckyValue = luckyValue.sub(luckyValue.mul(weightFactor[1]).div(1000));
-            uint256 onlyComfortValue = comfortValue.sub(comfortValue.mul(weightFactor[2]).div(1000));
-
-            raritySum += onlyRarityValue + onlyMoodValue + onlyLuckyValue + onlyComfortValue;
-        }
-    }
-
-    function getUserTokenData(address userAddress)
-    public
-    view
-    returns (uint256[] memory tokenIdArray){
-        uint256 amount = nftBalances[userAddress];
-        tokenIdArray = new uint256[](amount);
-        for (uint256 i; i < amount; ++i) {
-            tokenIdArray[i] = _ownedTokens[userAddress][i];
-        }
-    }
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     function stake(uint256[] memory tokenIds)
@@ -175,7 +109,6 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
 
     }
 
-
     function withdraw(uint256[] memory tokenIds)
     public
     nonReentrant
@@ -186,7 +119,8 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
         _balances[_msgSender()] = _balances[_msgSender()].sub(amount);
 
         for (uint256 i; i < tokenIds.length; ++i) {
-            require(_ownedTokens[_msgSender()][_ownedTokensIndex[tokenIds[i]]] == tokenIds[i],"");
+            if (_ownedTokens[_msgSender()][_ownedTokensIndex[tokenIds[i]]] != tokenIds[i])
+                revert CannotWithdraw(_msgSender(), tokenIds[i]);
 
             stakingToken.safeTransferFrom(address(this), _msgSender(), tokenIds[i]);
 
@@ -220,10 +154,10 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
      */
     function _addTokenToOwnerEnumeration(address to, uint256 tokenId)
     private {
-        nftBalances[to] += 1;
         uint256 length = nftBalances[to];
         _ownedTokens[to][length] = tokenId;
         _ownedTokensIndex[tokenId] = length;
+        nftBalances[to] += 1;
     }
 
     /**
@@ -276,10 +210,87 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint balance = rewardsToken.balanceOf(address(this));
-        if (rewardRate > balance.div(rewardsDuration)) revert ProvidedRewardHigh();
+        require(rewardRate <= balance.div(rewardsDuration), "Provided reward too high");
 
         lastUpdateTime = block.timestamp;
         periodFinish = block.timestamp.add(rewardsDuration);
         emit RewardAdded(reward);
+    }
+
+    /* ========== VIEWS ========== */
+    //
+    //    function totalSupply() external view returns (uint256) {
+    //        return _totalSupply;
+    //    }
+
+    //    function balanceOf(address account) external view returns (uint256) {
+    //        return _balances[account];
+    //    }
+
+    function lastTimeRewardApplicable()
+    public
+    view
+    returns (uint256) {
+        return Math.min(block.timestamp, periodFinish);
+    }
+
+    function rewardPerToken()
+    public
+    view
+    returns (uint256) {
+        if (_totalSupply == 0) {
+            return rewardPerTokenStored;
+        }
+        return
+        rewardPerTokenStored.add(
+            lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
+        );
+    }
+
+    function earned(address account)
+    public
+    view
+    returns (uint256) {
+        return _balances[account].mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]).div(1000);
+    }
+
+    function getRewardForDuration()
+    external
+    view
+    returns (uint256) {
+        return rewardRate.mul(rewardsDuration);
+    }
+
+    function getNftRaritySum(uint256[] memory tokenIds)
+    private
+    view
+    returns (uint256 raritySum){
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            (uint256 rarityValue,
+            uint256 moodValue,
+            uint256 luckyValue,
+            uint256 comfortValue) = SleepingBase(address(stakingToken)).getIdAndAttributes(tokenIds[i]);
+
+            if (rarityValue <= 1)
+                revert CannotStakeFree(tokenIds[i]);
+
+            uint256 onlyRarityValue = rarityValue.mul(20).mul(1000);
+            uint256 onlyMoodValue = ((moodValue.mul(1000)).mul(weightFactor[0]));
+            uint256 onlyLuckyValue = ((luckyValue.mul(1000)).mul(weightFactor[1]));
+            uint256 onlyComfortValue = ((comfortValue.mul(1000)).mul(weightFactor[2]));
+
+            raritySum += onlyRarityValue + onlyMoodValue + onlyLuckyValue + onlyComfortValue;
+        }
+    }
+
+    function getUserTokenData(address userAddress)
+    public
+    view
+    returns (uint256[] memory tokenIdArray){
+        uint256 amount = nftBalances[userAddress];
+        tokenIdArray = new uint256[](amount);
+        for (uint256 i; i < amount; ++i) {
+            tokenIdArray[i] = _ownedTokens[userAddress][i];
+        }
     }
 }
