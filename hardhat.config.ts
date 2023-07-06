@@ -92,7 +92,6 @@ const config: HardhatUserConfig = {
         noColors: true,
         // 显示运行时间
         showTimeSpent: true,
-
         // 法币
         currency: "USD",
         // 代币
@@ -106,7 +105,7 @@ const config: HardhatUserConfig = {
     // 合约大小
     contractSizer: {
         //按字母顺序对结果排序
-        alphaSort: true,
+        alphaSort: false,
         // 编译后是否自动输出合约大小
         runOnCompile: false,
         // 超过大小限制是否抛出错误
@@ -125,7 +124,7 @@ const config: HardhatUserConfig = {
     // abi导出
     abiExporter: {
         path: "otherFiles/abi/",
-        runOnCompile: true,
+        runOnCompile: false,
         clear: true,
 
     },
@@ -133,7 +132,7 @@ const config: HardhatUserConfig = {
     docgen: {
         path: "otherFiles/document/interfaceDoc",
         clear: true,
-        runOnCompile: true
+        runOnCompile: false
     },
     // 自动化开源
     etherscan: {
