@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
 // +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
@@ -17,6 +16,7 @@ interface SleepingBase {
     function getIdAndAttributes(uint256 onlyTokenId) external pure returns (uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue);
 }
 
+    error ProvidedRewardHigh(uint256 rewardRate);
     error CannotWithdraw(address userAddress, uint256 tokenId);
     error CannotStakeFree(uint256 tokenId);
 
@@ -50,8 +50,8 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
 
     /* ========== STATE VARIABLES ========== */
 
-    IERC20 public rewardsToken;
-    IERC721 public stakingToken;
+    IERC20 public immutable rewardsToken;
+    IERC721 public immutable stakingToken;
 
     uint256 public rewardRate = 0;
     uint256 public periodFinish = 0;
@@ -90,42 +90,45 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function stake(uint256[] memory tokenIds)
+    function stake(uint256[] calldata tokenIds)
     external
     nonReentrant
     updateReward(_msgSender()) {
         uint256 amount = getNftRaritySum(tokenIds);
+    unchecked{
+        _totalSupply += amount;
+        _balances[_msgSender()] += amount;
+    }
 
-        _totalSupply = _totalSupply.add(amount);
-        _balances[_msgSender()] = _balances[_msgSender()].add(amount);
-
-        for (uint256 i; i < tokenIds.length; ++i) {
+        for (uint256 i; i < tokenIds.length;) {
             stakingToken.safeTransferFrom(_msgSender(), address(this), tokenIds[i]);
-
             _addTokenToOwnerEnumeration(_msgSender(), tokenIds[i]);
-
+        unchecked{
+            ++i;
+        }
             emit Staked(_msgSender(), tokenIds[i]);
         }
 
     }
 
-    function withdraw(uint256[] memory tokenIds)
+    function withdraw(uint256[] calldata tokenIds)
     public
     nonReentrant
     updateReward(_msgSender()) {
         uint256 amount = getNftRaritySum(tokenIds);
 
-        _totalSupply = _totalSupply.sub(amount);
-        _balances[_msgSender()] = _balances[_msgSender()].sub(amount);
+        _totalSupply -= amount;
+        _balances[_msgSender()] -= amount;
 
-        for (uint256 i; i < tokenIds.length; ++i) {
+        for (uint256 i; i < tokenIds.length;) {
             if (_ownedTokens[_msgSender()][_ownedTokensIndex[tokenIds[i]]] != tokenIds[i])
                 revert CannotWithdraw(_msgSender(), tokenIds[i]);
 
             stakingToken.safeTransferFrom(address(this), _msgSender(), tokenIds[i]);
-
             _removeTokenFromOwnerEnumeration(_msgSender(), tokenIds[i]);
-
+        unchecked{
+            ++i;
+        }
             emit Withdrawn(_msgSender(), tokenIds[i]);
         }
     }
@@ -154,10 +157,12 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
      */
     function _addTokenToOwnerEnumeration(address to, uint256 tokenId)
     private {
+    unchecked{
         uint256 length = nftBalances[to];
         _ownedTokens[to][length] = tokenId;
         _ownedTokensIndex[tokenId] = length;
         nftBalances[to] += 1;
+    }
     }
 
     /**
@@ -197,12 +202,12 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
     external
     onlyRewardsDistribution
     updateReward(address(0)) {
-        if (block.timestamp >= periodFinish) {
-            rewardRate = reward.div(rewardsDuration);
+        if (block.timestamp > periodFinish) {
+            rewardRate = reward / rewardsDuration;
         } else {
-            uint256 remaining = periodFinish.sub(block.timestamp);
-            uint256 leftover = remaining.mul(rewardRate);
-            rewardRate = reward.add(leftover).div(rewardsDuration);
+            uint256 remaining = periodFinish - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            rewardRate = reward + leftover / rewardsDuration;
         }
 
         // Ensure the provided reward amount is not more than the balance in the contract.
@@ -210,10 +215,11 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
         // very high values of rewardRate in the earned and rewardsPerToken functions;
         // Reward + leftover must be less than 2^256 / 10^18 to avoid overflow.
         uint balance = rewardsToken.balanceOf(address(this));
-        require(rewardRate <= balance.div(rewardsDuration), "Provided reward too high");
+        if (!(rewardRate <= balance / rewardsDuration))
+            revert ProvidedRewardHigh(rewardRate);
 
         lastUpdateTime = block.timestamp;
-        periodFinish = block.timestamp.add(rewardsDuration);
+        periodFinish = block.timestamp + rewardsDuration;
         emit RewardAdded(reward);
     }
 
@@ -231,7 +237,7 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
     public
     view
     returns (uint256) {
-        return Math.min(block.timestamp, periodFinish);
+        return block.timestamp < periodFinish ? block.timestamp : periodFinish;
     }
 
     function rewardPerToken()
@@ -242,8 +248,8 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
             return rewardPerTokenStored;
         }
         return
-        rewardPerTokenStored.add(
-            lastTimeRewardApplicable().sub(lastUpdateTime).mul(rewardRate).mul(1e18).div(_totalSupply)
+        rewardPerTokenStored + (
+        lastTimeRewardApplicable() - (lastUpdateTime) * (rewardRate) * (1e18) / (_totalSupply)
         );
     }
 
@@ -251,35 +257,38 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
     public
     view
     returns (uint256) {
-        return _balances[account].mul(rewardPerToken().sub(userRewardPerTokenPaid[account])).div(1e18).add(rewards[account]).div(1000);
+        return _balances[account] * (rewardPerToken() - (userRewardPerTokenPaid[account])) / (1e18) + (rewards[account]) / (1000);
     }
 
     function getRewardForDuration()
     external
     view
     returns (uint256) {
-        return rewardRate.mul(rewardsDuration);
+        return rewardRate / rewardsDuration;
     }
 
-    function getNftRaritySum(uint256[] memory tokenIds)
+    function getNftRaritySum(uint256[] calldata tokenIds)
     private
     view
     returns (uint256 raritySum){
-        for (uint256 i = 0; i < tokenIds.length; i++) {
+        for (uint256 i = 0; i < tokenIds.length;) {
             (uint256 rarityValue,
             uint256 moodValue,
             uint256 luckyValue,
             uint256 comfortValue) = SleepingBase(address(stakingToken)).getIdAndAttributes(tokenIds[i]);
 
-            if (rarityValue <= 1)
+            if (rarityValue == 1)
                 revert CannotStakeFree(tokenIds[i]);
 
-            uint256 onlyRarityValue = rarityValue.mul(20).mul(1000);
-            uint256 onlyMoodValue = ((moodValue.mul(1000)).mul(weightFactor[0]));
-            uint256 onlyLuckyValue = ((luckyValue.mul(1000)).mul(weightFactor[1]));
-            uint256 onlyComfortValue = ((comfortValue.mul(1000)).mul(weightFactor[2]));
+        unchecked {
+            uint256 onlyRarityValue = rarityValue * (25) * (1000);
+            uint256 onlyMoodValue = ((moodValue * (1000)) * (weightFactor[0]));
+            uint256 onlyLuckyValue = ((luckyValue * (1000)) * (weightFactor[1]));
+            uint256 onlyComfortValue = ((comfortValue * (1000)) * (weightFactor[2]));
 
             raritySum += onlyRarityValue + onlyMoodValue + onlyLuckyValue + onlyComfortValue;
+            ++i;
+        }
         }
     }
 
@@ -289,8 +298,11 @@ contract SleepingBaseNftStaker is Context, ERC721Holder, ReentrancyGuard {
     returns (uint256[] memory tokenIdArray){
         uint256 amount = nftBalances[userAddress];
         tokenIdArray = new uint256[](amount);
-        for (uint256 i; i < amount; ++i) {
+        for (uint256 i; i < amount;) {
+        unchecked{
             tokenIdArray[i] = _ownedTokens[userAddress][i];
+            ++i;
+        }
         }
     }
 }

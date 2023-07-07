@@ -10,8 +10,10 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 // |S| |l| |e| |e| |p| |i| |n| |g| |B| |a| |s| |e| |B| |l| |i| |n| |d| |B| |o| |x|
 // +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
 
+    error InsufficientBalance(uint256 balanceOf);
     error NotYetOpeningTime(uint256 currentTime);
     error NotYetTradingTime(uint256 currentTime);
+    error InvalidArguments();
     error AlreadyClaimed();
     error InvalidProof();
 
@@ -32,8 +34,8 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     bytes32 public merkleRoot;
     // This is a compressed value of the turn-on time and transition time
     uint256 private openAndSalesTime;
-    SleepingBase public sleepingBase;
-    uint256 public totalId;
+    SleepingBase public immutable sleepingBase;
+    uint256 public immutable totalId;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -120,7 +122,8 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         uint256 amount,
         bytes32[] calldata merkleProof)
     public {
-        if (isClaimed(index)) revert AlreadyClaimed();
+        if (isClaimed(index))
+            revert AlreadyClaimed();
 
         // Verify the merkle proof.
         bytes32 node = keccak256(abi.encodePacked(index, _msgSender(), amount));
@@ -147,10 +150,14 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         string[] memory uris)
     public
     whenNotPaused {
-        require(super.balanceOf(_msgSender(), totalId) >= amount, "Insufficient balance");
-        require(tokenIds.length == uris.length && uris.length == amount, "Invalid arguments");
+        if (super.balanceOf(_msgSender(), totalId) < amount)
+            revert InsufficientBalance(super.balanceOf(_msgSender(), totalId));
+
+        if (!(tokenIds.length == uris.length && uris.length == amount))
+            revert InvalidArguments();
+
         (uint256 openingTime,) = _getOpenAndSalesTime(openAndSalesTime);
-        if (block.timestamp <= openingTime)
+        if (block.timestamp < openingTime)
             revert NotYetOpeningTime(block.timestamp);
 
         // Destroy the blind box first
@@ -190,8 +197,10 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     private
     pure
     returns (uint256 openTime, uint128 salesTime) {
+    unchecked{
         openTime = uint256(uint128(data >> 128));
         salesTime = uint128(data);
+    }
     }
 
     /* ========== OVERRIDE FUNCTIONS ========== */
@@ -223,7 +232,8 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     virtual
     override {
         (, uint256 salesTime) = _getOpenAndSalesTime(openAndSalesTime);
-        if (block.timestamp <= salesTime) revert NotYetTradingTime(block.timestamp);
+        if (block.timestamp < salesTime)
+            revert NotYetTradingTime(block.timestamp);
         super.safeTransferFrom(from, to, totalId, amount, data);
     }
 

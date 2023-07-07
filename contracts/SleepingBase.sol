@@ -54,12 +54,15 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
         string[] memory uris)
     external
     onlyRole(MINTER_ROLE) {
-        for (uint256 i; i < tokenIds.length; ++i) {
+        for (uint256 i; i < tokenIds.length;) {
             (uint256 onlyTokenId) = _getTokenId(tokenIds[i]);
             if (_exists(onlyTokenId) && ownerOf(onlyTokenId) == to) safeBurn(onlyTokenId);
             _safeMint(to, onlyTokenId);
             _setTokenURI(onlyTokenId, uris[i]);
+        unchecked {
             tokenAttributes[onlyTokenId] = tokenIds[i];
+            ++i;
+        }
         }
     }
 
@@ -78,7 +81,7 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
     * @param tokenId Token id
     * @param uri Token new uri
     */
-    function setTokenUri(uint256 tokenId, string memory uri)
+    function setTokenUri(uint256 tokenId, string calldata uri)
     public
     onlyRole(MINTER_ROLE)
     {
@@ -101,9 +104,12 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
         uint256 amount = super.balanceOf(userAddress);
         uint256[] memory tokenIdArray = new uint256[](amount);
         string[] memory tokenUriArray = new string[](amount);
-        for (uint256 i; i < amount; ++i) {
+        for (uint256 i; i < amount;) {
+        unchecked {
             tokenIdArray[i] = super.tokenOfOwnerByIndex(userAddress, i);
             tokenUriArray[i] = super.tokenURI(tokenIdArray[i]);
+            ++i;
+        }
         }
         return (tokenIdArray, tokenUriArray);
     }
@@ -112,25 +118,31 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
     private
     pure
     returns (uint256 tokenId){
+    unchecked{
         tokenId = data >> 192;
+    }
     }
 
     function getIdAndAttributes(uint256 onlyTokenId)
     external
     view
     returns (uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue) {
+    unchecked{
         uint256 data = tokenAttributes[onlyTokenId];
         rarityValue = (data >> 128) & ((1 << 64) - 1);
         moodValue = (data >> 96) & ((1 << 32) - 1);
         luckyValue = (data >> 64) & ((1 << 32) - 1);
         comfortValue = data & ((1 << 64) - 1);
     }
+    }
 
     function getTokenAttributes(uint256 onlyTokenId)
     external
     view
     returns (uint256 data){
+    unchecked{
         data = tokenAttributes[onlyTokenId];
+    }
     }
 
     /* ========== OVERRIDE FUNCTION ========== */

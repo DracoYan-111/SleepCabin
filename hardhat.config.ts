@@ -124,7 +124,7 @@ const config: HardhatUserConfig = {
     // abi导出
     abiExporter: {
         path: "otherFiles/abi/",
-        runOnCompile: true,
+        runOnCompile: false,
         clear: true,
 
     },
@@ -132,7 +132,7 @@ const config: HardhatUserConfig = {
     docgen: {
         path: "otherFiles/document/interfaceDoc",
         clear: true,
-        runOnCompile: true
+        runOnCompile: false
     },
     // 自动化开源
     etherscan: {
