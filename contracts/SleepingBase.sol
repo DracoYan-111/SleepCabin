@@ -78,7 +78,7 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
     * @param tokenId Token id
     * @param uri Token new uri
     */
-    function steTokenUri(uint256 tokenId, string memory uri)
+    function setTokenUri(uint256 tokenId, string memory uri)
     public
     onlyRole(MINTER_ROLE)
     {
