@@ -3,6 +3,32 @@ import {expect} from "chai";
 import {ethers} from "hardhat";
 
 describe("SleepingBase", function () {
+    // 生成tokenId和其属性的打包值
+    function tokenIdGeneration(ages: string[]): bigint {
+        const value1: bigint = BigInt(ages[0]); // 替换为正确的 tokenID
+        const value2: bigint = BigInt(ages[1]); // 替换为正确的 token 稀有度
+        const value3: bigint = BigInt(ages[2]); // 替换为正确的 token 心情值
+        const value4: bigint = BigInt(ages[3]); // 替换为正确的 token 幸运值
+        const value5: bigint = BigInt(ages[4]); // 替换为正确的 token 舒适度
+
+        const shift192: bigint = value1 << 192n;
+        const shift128: bigint = value2 << 128n;
+        const shift96: bigint = value3 << 96n;
+        const shift64: bigint = value4 << 64n;
+
+        return shift192 | shift128 | shift96 | shift64 | value5
+    }
+
+    // 解析tokenId和其属性的打包值
+    function tokenIdAnalysis(data: bigint): [bigint, bigint, bigint, bigint, bigint] {
+        const tokenId: bigint = data >> 192n;
+        const rarityValue: bigint = (data >> 128n) & ((1n << 64n) - 1n);
+        const moodValue: bigint = (data >> 96n) & ((1n << 32n) - 1n);
+        const luckyValue: bigint = (data >> 64n) & ((1n << 32n) - 1n);
+        const comfortValue: bigint = data & ((1n << 64n) - 1n);
+
+        return [tokenId, rarityValue, moodValue, luckyValue, comfortValue];
+    }
 
     async function deploySleepingBase() {
         const [owner, otherAccount] = await ethers.getSigners();
@@ -72,35 +98,11 @@ describe("SleepingBase", function () {
 
             });
 
-            function tokenIdGeneration(): bigint {
-                const value1: bigint = BigInt("10"); // 替换为正确的 tokenID
-                const value2: bigint = BigInt("5"); // 替换为正确的 token 稀有度
-                const value3: bigint = BigInt("56"); // 替换为正确的 token 心情值
-                const value4: bigint = BigInt("36"); // 替换为正确的 token 幸运值
-                const value5: bigint = BigInt("68"); // 替换为正确的 token 舒适度
-
-                const shift192: bigint = value1 << 192n;
-                const shift128: bigint = value2 << 128n;
-                const shift96: bigint = value3 << 96n;
-                const shift64: bigint = value4 << 64n;
-
-                return shift192 | shift128 | shift96 | shift64 | value5
-            }
-
-            function tokenIdAnalysis(data: bigint): [bigint, bigint, bigint, bigint, bigint] {
-                const tokenId: bigint = data >> 192n;
-                const rarityValue: bigint = (data >> 128n) & ((1n << 64n) - 1n);
-                const moodValue: bigint = (data >> 96n) & ((1n << 32n) - 1n);
-                const luckyValue: bigint = (data >> 64n) & ((1n << 32n) - 1n);
-                const comfortValue: bigint = data & ((1n << 64n) - 1n);
-
-                return [tokenId, rarityValue, moodValue, luckyValue, comfortValue];
-            }
 
             it("因该可以进行增发操作,他人相反", async function () {
                 const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
-                let combinedData = tokenIdGeneration()
+                let combinedData = tokenIdGeneration(['2','5','68','34','76'])
 
                 await expect(sleepingBase.safeMint(owner.address, [combinedData], ["test"])).not.to.be.reverted;
                 await expect(sleepingBase.connect(otherAccount).safeMint(owner.address, [combinedData], ["test"])).to.be.reverted;
@@ -110,7 +112,7 @@ describe("SleepingBase", function () {
             it("因该可以进行销毁操作,他人相反", async function () {
                 const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
-                let combinedData = tokenIdGeneration()
+                let combinedData = tokenIdGeneration(['2','5','68','34','76'])
                 let [tokenId] = tokenIdAnalysis(combinedData);
 
                 await sleepingBase.safeMint(owner.address, [combinedData], ["test"])
@@ -123,7 +125,7 @@ describe("SleepingBase", function () {
             it("因该可以进行URI修改,他人相反", async function () {
                 const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
-                let combinedData = tokenIdGeneration()
+                let combinedData = tokenIdGeneration(['2','5','68','34','76'])
                 let [tokenId] = tokenIdAnalysis(combinedData);
 
                 await sleepingBase.safeMint(owner.address, [combinedData], ["test"])
@@ -135,7 +137,27 @@ describe("SleepingBase", function () {
 
 
         describe("转账", function () {
+            it("NFT拥有者应该可以转账", async function () {
+                const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
+                let combinedData = tokenIdGeneration(['2','5','68','34','76']);
+                await sleepingBase.safeMint(owner.address, [combinedData], ["test"]);
+
+                let [tokenId] = tokenIdAnalysis(combinedData);
+                await sleepingBase.setApprovalForAll(otherAccount.address, true);
+
+                await expect(sleepingBase.transferFrom(owner.address, otherAccount.address, tokenId)).not.to.be.reverted;
+            });
+
+            it("NFT未拥有者不应该可以转账", async function () {
+                const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
+
+                let combinedData = tokenIdGeneration(['2','5','68','34','76']);
+                let [tokenId] = tokenIdAnalysis(combinedData);
+                await sleepingBase.connect(otherAccount).setApprovalForAll(owner.address, true);
+
+                await expect(sleepingBase.connect(otherAccount).transferFrom(otherAccount.address, owner.address, tokenId)).to.be.reverted;
+            });
         });
     });
 });

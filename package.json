@@ -21,8 +21,9 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "proxy": "export http_proxy=http://127.0.0.1:7890",
-    "flatten": "npx hardhat flatten contracts/SleepingBaseNftStaker.sol > contracts/flatten/SleepingBaseNftStaker.sol",
-    "demo-merkle-root": "ts-node scripts/generate-merkle-root.ts --input scripts/complex_example.json"
+    "flatten": "npx hardhat flatten contracts/SleepingBaseBlindBox.sol > contracts/flatten/SleepingBaseBlindBox.sol",
+    "demo-merkle-root": "ts-node scripts/generate-merkle-root.ts --input scripts/complex_example.json",
+    "abiBin":"solcjs contracts/flatten/SleepingBaseBlindBox.sol --optimize-runs 999999999 --bin --abi -o otherFiles/compileFile/SleepingBaseBlindBox"
   },
   "dependencies": {
     "@uniswap/v3-core": "^1.0.1",

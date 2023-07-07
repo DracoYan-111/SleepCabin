@@ -149,7 +149,7 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     whenNotPaused {
         require(super.balanceOf(_msgSender(), totalId) >= amount, "Insufficient balance");
         require(tokenIds.length == uris.length && uris.length == amount, "Invalid arguments");
-        (uint256 openingTime,) = _getIdAndRarity(openAndSalesTime);
+        (uint256 openingTime,) = _getOpenAndSalesTime(openAndSalesTime);
         if (block.timestamp <= openingTime)
             revert NotYetOpeningTime(block.timestamp);
 
@@ -186,6 +186,14 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
     }
 
+    function _getOpenAndSalesTime(uint256 data)
+    private
+    pure
+    returns (uint256 openTime, uint128 salesTime) {
+        openTime = uint256(uint128(data >> 128));
+        salesTime = uint128(data);
+    }
+
     /* ========== OVERRIDE FUNCTIONS ========== */
 
     function _beforeTokenTransfer(
@@ -214,7 +222,7 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     public
     virtual
     override {
-        (, uint256 salesTime) = _getIdAndRarity(openAndSalesTime);
+        (, uint256 salesTime) = _getOpenAndSalesTime(openAndSalesTime);
         if (block.timestamp <= salesTime) revert NotYetTradingTime(block.timestamp);
         super.safeTransferFrom(from, to, totalId, amount, data);
     }
@@ -229,14 +237,5 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         uint256[] memory amounts,
         bytes memory data
     ) public virtual override {}
-
-    function _getIdAndRarity(uint256 data)
-    private
-    pure
-    returns (uint256 openTime, uint128 salesTime) {
-        openTime = uint256(uint128(data >> 128));
-        salesTime = uint128(data);
-    }
-
 }
 
