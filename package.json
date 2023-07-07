@@ -19,8 +19,7 @@
     "xdeployer": "^1.2.5"
   },
   "scripts": {
-    "compile": "npx hardhat compile",
-    "proxy": "export http_proxy=http://127.0.0.1:7890",
+    "compAndTest": "npx hardhat compile && npx hardhat test",
     "flatten": "npx hardhat flatten contracts/SleepingBaseBlindBox.sol > contracts/flatten/SleepingBaseBlindBox.sol",
     "demo-merkle-root": "ts-node scripts/generate-merkle-root.ts --input scripts/complex_example.json",
     "abiBin":"solcjs contracts/flatten/SleepingBaseBlindBox.sol --optimize-runs 999999999 --bin --abi -o otherFiles/compileFile/SleepingBaseBlindBox"
