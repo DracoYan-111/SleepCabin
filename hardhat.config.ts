@@ -96,18 +96,18 @@ const config: HardhatUserConfig = {
         currency: "USD",
         // 代币
         token: "ETH",
-        //动态的gasPrice
-        gasPriceApi: "https://arb-mainnet.g.alchemy.com/v2/e8OnpHbOynTJP3ObzoC1hCCGDM6i9LGG",
+        // 动态的gasPrice
+        gasPriceApi: "",
         // gas记者文件生成
         outputFile: "otherFiles/gas-report.txt",
 
     },
     // 合约大小
     contractSizer: {
-        //按字母顺序对结果排序
+        // 按字母顺序对结果排序
         alphaSort: false,
         // 编译后是否自动输出合约大小
-        runOnCompile: false,
+        runOnCompile: true,
         // 超过大小限制是否抛出错误
         strict: true,
         // 输出合约大小
@@ -124,7 +124,7 @@ const config: HardhatUserConfig = {
     // abi导出
     abiExporter: {
         path: "otherFiles/abi/",
-        runOnCompile: false,
+        runOnCompile: true,
         clear: true,
 
     },
@@ -132,7 +132,7 @@ const config: HardhatUserConfig = {
     docgen: {
         path: "otherFiles/document/interfaceDoc",
         clear: true,
-        runOnCompile: false
+        runOnCompile: true
     },
     // 自动化开源
     etherscan: {
@@ -149,8 +149,6 @@ const config: HardhatUserConfig = {
         rpcUrls: ["hardhat", "https://data-seed-prebsc-1-s1.binance.org:8545"],
         gasLimit: 5100000,
     }
-
-
 };
 
 export default config;
