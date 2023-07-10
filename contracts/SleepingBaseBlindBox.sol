@@ -6,6 +6,8 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+import "./extensions/BlindBoxPermit.sol";
+
 // +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
 // |S| |l| |e| |e| |p| |i| |n| |g| |B| |a| |s| |e| |B| |l| |i| |n| |d| |B| |o| |x|
 // +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
@@ -13,7 +15,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
     error InsufficientBalance(uint256 balanceOf);
     error NotYetOpeningTime(uint256 currentTime);
     error NotYetTradingTime(uint256 currentTime);
-    error InvalidArguments();
     error AlreadyClaimed();
     error InvalidProof();
 
@@ -21,7 +22,7 @@ interface SleepingBase {
     function safeMint(address to, uint256[] calldata tokenIds, string[] calldata uris) external;
 }
 
-contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
+contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable, BlindBoxPermit {
     /* ========== EVENTS ========== */
 
     event Claimed(uint256 index, address account, uint256 amount);
@@ -44,8 +45,10 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         uint256 openAndSalesTime_,
         string memory tokenUri_,
         bytes32 merkleRoot_,
-        uint256 totalId_
-    )ERC1155(tokenUri_) {
+        uint256 totalId_,
+        address owner_
+
+    )ERC1155(tokenUri_)BlindBoxPermit(owner_){
         openAndSalesTime = openAndSalesTime_;
         sleepingBase = sleepingBase_;
         merkleRoot = merkleRoot_;
@@ -149,16 +152,51 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
         uint256[] calldata tokenIds,
         string[] calldata uris)
     public
+    onlyOwner
     whenNotPaused {
         if (super.balanceOf(_msgSender(), totalId) < amount)
             revert InsufficientBalance(super.balanceOf(_msgSender(), totalId));
 
-        if (!(tokenIds.length == uris.length && uris.length == amount))
-            revert InvalidArguments();
 
         (uint256 openingTime,) = _getOpenAndSalesTime(openAndSalesTime);
         if (block.timestamp < openingTime)
             revert NotYetOpeningTime(block.timestamp);
+
+        // Destroy the blind box first
+        super._burn(_msgSender(), totalId, amount);
+        sleepingBase.safeMint(_msgSender(), tokenIds, uris);
+
+        emit OpenBox(block.timestamp, _msgSender(), amount);
+    }
+
+    /**
+    * @dev Open blind box permit
+    * @notice It cannot be called before the time is up,
+    *         and the interface can be locked
+    * @param amount Open blind box quantity
+    * @param tokenIds Array of token ids to be issued
+    * @param uris Array of token uri to be issued
+    * @param deadline Maximum effective time
+    */
+    function openBoxPermit(
+        uint256 amount,
+        uint256[] calldata tokenIds,
+        string[] calldata uris,
+        uint deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s)
+    public
+    override
+    whenNotPaused {
+        if (super.balanceOf(_msgSender(), totalId) < amount)
+            revert InsufficientBalance(super.balanceOf(_msgSender(), totalId));
+
+        (uint256 openingTime,) = _getOpenAndSalesTime(openAndSalesTime);
+        if (block.timestamp < openingTime)
+            revert NotYetOpeningTime(block.timestamp);
+
+        super.openBoxPermit(amount, tokenIds, uris, deadline, v, r, s);
 
         // Destroy the blind box first
         super._burn(_msgSender(), totalId, amount);
