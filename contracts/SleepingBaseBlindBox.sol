@@ -18,7 +18,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
     error InvalidProof();
 
 interface SleepingBase {
-    function safeMint(address to, uint256[] memory tokenIds, string[] memory uris) external;
+    function safeMint(address to, uint256[] calldata tokenIds, string[] calldata uris) external;
 }
 
 contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
@@ -146,8 +146,8 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable {
     */
     function openBox(
         uint256 amount,
-        uint256[] memory tokenIds,
-        string[] memory uris)
+        uint256[] calldata tokenIds,
+        string[] calldata uris)
     public
     whenNotPaused {
         if (super.balanceOf(_msgSender(), totalId) < amount)
