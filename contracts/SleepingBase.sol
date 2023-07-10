@@ -50,8 +50,8 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
     */
     function safeMint(
         address to,
-        uint256[] memory tokenIds,
-        string[] memory uris)
+        uint256[] calldata tokenIds,
+        string[] calldata uris)
     external
     onlyRole(MINTER_ROLE) {
         for (uint256 i; i < tokenIds.length;) {
