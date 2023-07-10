@@ -1,7 +1,72 @@
 import {execSync} from "child_process";
+import {BigNumber, providers, utils} from 'ethers'
 import fs from "fs";
 import {ethers} from "hardhat";
 import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
+
+export const PERMIT_TYPEHASH = utils.keccak256(
+    utils.toUtf8Bytes('openBoxPermit(uint256 amount, uint256[] calldata tokenIds, string[] calldata uris, uint256 nonce, uint deadline)')
+)
+
+export function getDomainSeparator(name: string, tokenAddress: string) {
+    return utils.keccak256(
+        utils.defaultAbiCoder.encode(
+            ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
+            [
+                utils.keccak256(
+                    utils.toUtf8Bytes('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
+                ),
+                utils.keccak256(utils.toUtf8Bytes(name)),
+                utils.keccak256(utils.toUtf8Bytes('1')),
+                1,
+                tokenAddress,
+            ]
+        )
+    )
+}
+
+export async function getApprovalDigest(
+    tokenName: string,
+    tokenAddress: string,
+    permit: { uris: string[]; tokenIds: string[]; value: number },
+    nonce: number,
+    deadline: number
+): Promise<string> {
+    const DOMAIN_SEPARATOR = getDomainSeparator(tokenName, tokenAddress)
+    return utils.keccak256(
+        utils.solidityPack(
+            ['bytes1', 'bytes1', 'bytes32', 'bytes32'],
+            [
+                '0x19',
+                '0x01',
+                DOMAIN_SEPARATOR,
+                utils.keccak256(
+                    utils.defaultAbiCoder.encode(
+                        ['bytes32', 'uint256', 'uint256[]', 'string[]', 'uint256', 'uint256'],
+                        [
+                            PERMIT_TYPEHASH,
+                            permit.value,
+                            permit.tokenIds,
+                            permit.uris,
+                            nonce,
+                            deadline
+                        ]
+                    )
+                ),
+            ]
+        )
+    )
+}
+
+export const REWARDS_DURATION = 60 * 60 * 24 * 60
+
+export function expandTo18Decimals(n: number): BigNumber {
+    return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
+}
+
+export async function mineBlock(provider: providers.Web3Provider, timestamp: number): Promise<void> {
+    return provider.send('evm_mine', [timestamp])
+}
 
 // 部署 SleepingBase 合约
 export async function deploySleepingBase() {
