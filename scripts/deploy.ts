@@ -62,14 +62,14 @@ async function main() {
 
     const digest = await getApprovalDigest(
         "SleepingBaseBlindBox",
-        "0x5FD6eB55D12E759a21C09eF703fe0CBa1DC9d88D",
+        "0x9a2E12340354d2532b4247da3704D2A5d73Bd189",
         {
             value: 1,
             tokenIds: ["12554203470773361529372990682287675750210981929426352078871"],
             uris: ["test"]
         },
-        2,
-        1698984438
+        0,
+        1789067245
     )
     console.log(digest)
     let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";

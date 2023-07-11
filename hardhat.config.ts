@@ -107,7 +107,7 @@ const config: HardhatUserConfig = {
         // 按字母顺序对结果排序
         alphaSort: false,
         // 编译后是否自动输出合约大小
-        runOnCompile: true,
+        runOnCompile: false,
         // 超过大小限制是否抛出错误
         strict: true,
         // 输出合约大小

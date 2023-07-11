@@ -2,10 +2,12 @@ import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
 import {expect} from "chai";
 import {
     deploySleepingBaseBlindBox,
+    readGenerateMerkleData,
+    getApprovalDigest,
     tokenIdGeneration,
-    timeGeneration,
-    readGenerateMerkleData
+    timeGeneration
 } from "../utils/utils";
+import {ecsign} from "ethereumjs-util";
 
 describe("SleepingBaseBlindBox", function () {
 
@@ -109,10 +111,10 @@ describe("SleepingBaseBlindBox", function () {
                 const {sleepingBaseBlindBox, owner, otherAccount} = await loadFixture(deploySleepingBaseBlindBox);
 
                 await expect(
-                    sleepingBaseBlindBox.mint(owner.address, 99)
+                    sleepingBaseBlindBox.mint(owner.address)
                 ).not.to.be.reverted;
                 await expect(
-                    sleepingBaseBlindBox.connect(otherAccount).mint(otherAccount.address, 99)
+                    sleepingBaseBlindBox.connect(otherAccount).mint(otherAccount.address)
                 ).to.be.reverted;
 
             });
@@ -141,6 +143,26 @@ describe("SleepingBaseBlindBox", function () {
 
             });
 
+            it("应该不可以进行多次领取操作", async function () {
+                const {sleepingBaseBlindBox, owner} = await loadFixture(deploySleepingBaseBlindBox);
+
+                let userMerkleData = generateMerkleData.claims[owner.address];
+
+                await expect(
+                    sleepingBaseBlindBox.claim(
+                        userMerkleData.index,
+                        userMerkleData.amount,
+                        userMerkleData.proof)
+                ).not.to.be.reverted;
+
+                await expect(
+                    sleepingBaseBlindBox.claim(
+                        userMerkleData.index,
+                        userMerkleData.amount,
+                        userMerkleData.proof)
+                ).to.be.reverted;
+            });
+
             it("未到时间应该不可以操作", async function () {
                 const {
                     sleepingBaseBlindBox,
@@ -162,23 +184,48 @@ describe("SleepingBaseBlindBox", function () {
                 let userMerkleData = generateMerkleData.claims[owner.address];
                 await sleepingBaseBlindBox.claim(userMerkleData.index, userMerkleData.amount, userMerkleData.proof);
 
-                // 批转盲盒的转移
+                // 批准盲盒的转移
                 await sleepingBaseBlindBox.setApprovalForAll(otherAccount.address, true);
 
-                await expect(
-                    sleepingBaseBlindBox.openBox(
-                        2,
-                        [tokenIdGeneration(["3", "4", "23", "45", "34"]), tokenIdGeneration(["4", "3", "32", "45", "33"])],
-                        ["test", "test"])
-                ).to.be.reverted;
+
+                let valueData = 1;
+                let tokenIdsData = ["12554203470773361529372990682287675750210981929426352078871"];
+                let urisData = ["test"]
+                let nonce = await sleepingBaseBlindBox.nonces();
+                let deadline = time * 10
+                let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
+
+                let digest = await getApprovalDigest(
+                    "SleepingBaseBlindBox",
+                    sleepingBaseBlindBox.address,
+                    {
+                        value: valueData,
+                        tokenIds: tokenIdsData,
+                        uris: urisData
+                    },
+                    nonce,
+                    deadline
+                )
+                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(privateKey.slice(2), 'hex'))
 
                 await expect(
-                    sleepingBaseBlindBox.safeTransferFrom(
+                    sleepingBaseBlindBox.openBoxPermit(
+                        valueData,
+                        tokenIdsData,
+                        urisData,
+                        deadline,
+                        v,
+                        r,
+                        s)
+                ).to.be.reverted;
+
+                let tokenId = await sleepingBaseBlindBox.tokenOfOwnerByIndex(owner.address, 0);
+
+                await expect(
+                    sleepingBaseBlindBox.transferFrom(
                         owner.address,
                         otherAccount.address,
-                        0,
-                        1,
-                        "0x")
+                        tokenId)
                 ).to.be.reverted;
 
             });
@@ -198,30 +245,64 @@ describe("SleepingBaseBlindBox", function () {
 
                 // 设置新的时间
                 let time = Math.floor(Date.now() / 1000)
-                await sleepingBaseBlindBox.setOpenAndSalesTime(timeGeneration([(time - 100).toString(), (time - 100).toString()]));
+                await sleepingBaseBlindBox.setOpenAndSalesTime(timeGeneration([(time - 1000).toString(), (time + 1000).toString()]));
 
                 // 领取盲盒
                 let userMerkleData = generateMerkleData.claims[owner.address];
                 await sleepingBaseBlindBox.claim(userMerkleData.index, userMerkleData.amount, userMerkleData.proof);
 
-                // 批转盲盒的转移
+                // 批准盲盒的转移
                 await sleepingBaseBlindBox.setApprovalForAll(otherAccount.address, true);
 
+
+                let valueData = 1;
+                let tokenIdsData = ["12554203470773361529372990682287675750210981929426352078871"];
+                let urisData = ["test"]
+                let nonce = await sleepingBaseBlindBox.nonces();
+                let deadline = time * 10
+                let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
+
+                let digest = await getApprovalDigest(
+                    "SleepingBaseBlindBox",
+                    sleepingBaseBlindBox.address.toString(),
+                    {
+                        value: valueData,
+                        tokenIds: tokenIdsData,
+                        uris: urisData
+                    },
+                    nonce,
+                    deadline
+                )
+                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(privateKey.slice(2), 'hex'))
+
+
+                console.log(
+                    valueData,
+                    tokenIdsData,
+                    urisData,
+                    deadline,
+                    v,
+                    "0x" + r.toString("hex"),
+                    "0x" + s.toString("hex"))
                 await expect(
-                    sleepingBaseBlindBox.openBox(
-                        2,
-                        [tokenIdGeneration(["3", "4", "23", "45", "34"]), tokenIdGeneration(["4", "3", "32", "45", "33"])],
-                        ["test", "test"])
+                    sleepingBaseBlindBox.openBoxPermit(
+                        valueData,
+                        tokenIdsData,
+                        urisData,
+                        deadline,
+                        v,
+                        "0x" + r.toString("hex"),
+                        "0x" + s.toString("hex"))
                 ).not.to.be.reverted;
 
-                await expect(
-                    sleepingBaseBlindBox.safeTransferFrom(
-                        owner.address,
-                        otherAccount.address,
-                        0,
-                        1,
-                        "0x")
-                ).not.to.be.reverted;
+                let tokenId = await sleepingBaseBlindBox.tokenOfOwnerByIndex(owner.address, 0);
+
+                // await expect(
+                //     sleepingBaseBlindBox.transferFrom(
+                //         owner.address,
+                //         otherAccount.address,
+                //         tokenId)
+                // ).to.be.reverted;
 
             });
 

@@ -8,6 +8,7 @@ export const PERMIT_TYPEHASH = utils.keccak256(
     utils.toUtf8Bytes('openBoxPermit(uint256 amount, uint256[] calldata tokenIds, string[] calldata uris, uint256 nonce, uint deadline)')
 )
 
+// Todo ⬇
 export function getDomainSeparator(name: string, tokenAddress: string) {
     return utils.keccak256(
         utils.defaultAbiCoder.encode(
@@ -18,12 +19,13 @@ export function getDomainSeparator(name: string, tokenAddress: string) {
                 ),
                 utils.keccak256(utils.toUtf8Bytes(name)),
                 utils.keccak256(utils.toUtf8Bytes('1')),
-                1,
+                1, // Todo ⬅ 链id可能存在问题
                 tokenAddress,
             ]
         )
     )
 }
+// Todo ⬆
 
 export async function getApprovalDigest(
     tokenName: string,
@@ -58,16 +60,6 @@ export async function getApprovalDigest(
     )
 }
 
-export const REWARDS_DURATION = 60 * 60 * 24 * 60
-
-export function expandTo18Decimals(n: number): BigNumber {
-    return BigNumber.from(n).mul(BigNumber.from(10).pow(18))
-}
-
-export async function mineBlock(provider: providers.Web3Provider, timestamp: number): Promise<void> {
-    return provider.send('evm_mine', [timestamp])
-}
-
 // 部署 SleepingBase 合约
 export async function deploySleepingBase() {
     const [owner, otherAccount] = await ethers.getSigners();
@@ -82,9 +74,9 @@ export async function deploySleepingBase() {
 export async function deploySleepingBaseBlindBox() {
     const [owner, otherAccount] = await ethers.getSigners();
 
-    const SleepingBaseBlindBox = await ethers.getContractFactory("contracts/SleepingBaseBlindBox.sol:SleepingBaseBlindBox");
+    const SleepingBaseBlindBox = await ethers.getContractFactory("contracts/SleepingBaseBlindBoxFacelift.sol:SleepingBaseBlindBox");
 
-    //runGenerateMerkleRoot();
+    runGenerateMerkleRoot();
     const {sleepingBase} = await loadFixture(deploySleepingBase);
     let time = Math.floor(Date.now() / 1000)
     let openAndSalesTime = timeGeneration([(time + 1000).toString(), (time + 2000).toString()]);
@@ -97,7 +89,7 @@ export async function deploySleepingBaseBlindBox() {
         openAndSalesTime,
         tokenUri,
         generateMerkleData.merkleRoot,
-        999
+        "0x5ab8C46e98D6f86496C0b415110ABB0Cd734F6Af"
     );
 
     return {sleepingBaseBlindBox, owner, otherAccount, sleepingBase, openAndSalesTime};
@@ -151,10 +143,10 @@ export function timeAnalysis(data: bigint): [bigint, bigint] {
 // 生成默克尔根到文件中
 export function runGenerateMerkleRoot(): void {
     try {
-        const command = 'ts-node scripts/generate-merkle-root.ts --input scripts/complex_example.json';
+        const command = 'ts-node scripts/generate-merkle-root.ts --input otherFiles/complex_example.json';
         const output = execSync(command, {encoding: 'utf8'});
 
-        console.log(output);
+        //console.log(output);
     } catch (error) {
         console.error('Error executing command:', error);
     }
