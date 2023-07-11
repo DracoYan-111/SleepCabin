@@ -4,7 +4,7 @@ import {
     deploySleepingBase,
     tokenIdGeneration,
     tokenIdAnalysis
-} from "./utils/utils";
+} from "../utils/utils";
 
 describe("SleepingBase", function () {
     describe("检查类", function () {

@@ -6,7 +6,7 @@ import {
     runGenerateMerkleRoot,
     tokenIdGeneration,
     timeGeneration
-} from "../test/utils/utils"
+} from "../utils/utils"
 import {ecsign} from 'ethereumjs-util'
 
 async function main() {

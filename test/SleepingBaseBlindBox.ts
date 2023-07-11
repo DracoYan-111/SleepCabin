@@ -5,7 +5,7 @@ import {
     tokenIdGeneration,
     timeGeneration,
     readGenerateMerkleData
-} from "./utils/utils";
+} from "../utils/utils";
 
 describe("SleepingBaseBlindBox", function () {
 
