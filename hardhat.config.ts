@@ -17,7 +17,9 @@ const config: HardhatUserConfig = {
     // 网络配置
     networks: {
         // hardhat 默认网络
-        hardhat: {},
+        hardhat: {
+            chainId: 10086
+        },
         // 本地环境
         local: {
             url: "http://127.0.0.1:8545",
@@ -29,7 +31,8 @@ const config: HardhatUserConfig = {
                 path: "m/44'/60'/0'/0",
                 initialIndex: 0,
                 count: 10
-            }
+            },
+            chainId: 10086
         },
         bscMain: {
             url: "https://bsc-dataseed1.binance.org",
