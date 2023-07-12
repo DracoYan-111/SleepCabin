@@ -51,6 +51,7 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
         sleepingBase = sleepingBase_;
         _onlyTokenUri = tokenUri_;
         merkleRoot = merkleRoot_;
+        _transferOwnership(tx.origin);
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */

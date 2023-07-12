@@ -146,7 +146,8 @@ const config: HardhatUserConfig = {
     // 多链同地址部署
     xdeploy: {
         contract: "contracts/SleepingBase.sol:SleepingBase",
-        salt: "0x23e6EA497EFAAa53c40c3aD6de3c053EaE76793e24D10edA9EDd20885e361F",
+        salt: "0xc4aA1C28BFcC79f57596bcc98A637D2efEBD2B123E64df03641600C8AD1f87",
+        //constructorArgsPath: "deploy/SleepingBaseBlindBoxConstructor.ts",
         signer: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
         networks: ["localhost"],
         rpcUrls: ["http://127.0.0.1:8545"],

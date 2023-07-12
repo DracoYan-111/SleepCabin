@@ -21,9 +21,9 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
     /* ========== CONSTRUCTOR ========== */
 
     constructor() ERC721("SleepingBase", "") {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(PAUSER_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);}
+        _grantRole(DEFAULT_ADMIN_ROLE, tx.origin);
+        _grantRole(PAUSER_ROLE, tx.origin);
+        _grantRole(MINTER_ROLE, tx.origin);}
 
 
     /* ========== RESTRICTED FUNCTIONS ========== */

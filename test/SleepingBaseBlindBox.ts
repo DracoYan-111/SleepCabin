@@ -2,7 +2,7 @@ import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
 import {expect} from "chai";
 import {
     deploySleepingBaseBlindBox,
-    readGenerateMerkleData,
+    readGenerateData,
     getApprovalDigest,
     tokenIdGeneration,
     timeGeneration
@@ -24,7 +24,7 @@ describe("SleepingBaseBlindBox", function () {
         it("应该拥有正确的merkleRoot", async function () {
             const {sleepingBaseBlindBox} = await loadFixture(deploySleepingBaseBlindBox);
 
-            let generateMerkleData = readGenerateMerkleData();
+            let generateMerkleData = readGenerateData('otherFiles/generateMerkle.json');
 
             expect(
                 await sleepingBaseBlindBox.merkleRoot()
@@ -96,7 +96,7 @@ describe("SleepingBaseBlindBox", function () {
             it("应该可以修改merkleRoot,他人相反", async function () {
                 const {sleepingBaseBlindBox, otherAccount} = await loadFixture(deploySleepingBaseBlindBox);
 
-                let generateMerkleData = readGenerateMerkleData();
+                let generateMerkleData = readGenerateData('otherFiles/generateMerkle.json');
 
                 await expect(
                     sleepingBaseBlindBox.setMerkleRoot(generateMerkleData.merkleRoot)
@@ -121,7 +121,7 @@ describe("SleepingBaseBlindBox", function () {
         });
 
         describe("用户操作", function () {
-            const generateMerkleData = readGenerateMerkleData();
+            const generateMerkleData = readGenerateData('otherFiles/generateMerkle.json');
 
             it("应该可以进行正确的领取操作", async function () {
                 const {sleepingBaseBlindBox, owner} = await loadFixture(deploySleepingBaseBlindBox);
@@ -341,7 +341,7 @@ describe("SleepingBaseBlindBox", function () {
                         valueData + 1,
                         tokenIdsData,
                         urisData,
-                        deadline+100,
+                        deadline + 100,
                         v,
                         r,
                         s)
