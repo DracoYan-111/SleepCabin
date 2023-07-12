@@ -245,7 +245,7 @@ describe("SleepingBaseBlindBox", function () {
 
                 // 设置新的时间
                 let time = Math.floor(Date.now() / 1000)
-                await sleepingBaseBlindBox.setOpenAndSalesTime(timeGeneration([(time - 1000).toString(), (time + 1000).toString()]));
+                await sleepingBaseBlindBox.setOpenAndSalesTime(timeGeneration([(time - 1000).toString(), (time - 1000).toString()]));
 
                 // 领取盲盒
                 let userMerkleData = generateMerkleData.claims[owner.address];
@@ -253,7 +253,6 @@ describe("SleepingBaseBlindBox", function () {
 
                 // 批准盲盒的转移
                 await sleepingBaseBlindBox.setApprovalForAll(otherAccount.address, true);
-
 
                 let valueData = 1;
                 let tokenIdsData = ["12554203470773361529372990682287675750210981929426352078871"];
@@ -275,15 +274,6 @@ describe("SleepingBaseBlindBox", function () {
                 )
                 const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(privateKey.slice(2), 'hex'))
 
-
-                console.log(
-                    valueData,
-                    tokenIdsData,
-                    urisData,
-                    deadline,
-                    v,
-                    "0x" + r.toString("hex"),
-                    "0x" + s.toString("hex"))
                 await expect(
                     sleepingBaseBlindBox.openBoxPermit(
                         valueData,
@@ -291,21 +281,73 @@ describe("SleepingBaseBlindBox", function () {
                         urisData,
                         deadline,
                         v,
-                        "0x" + r.toString("hex"),
-                        "0x" + s.toString("hex"))
+                        r,
+                        s)
                 ).not.to.be.reverted;
 
                 let tokenId = await sleepingBaseBlindBox.tokenOfOwnerByIndex(owner.address, 0);
 
-                // await expect(
-                //     sleepingBaseBlindBox.transferFrom(
-                //         owner.address,
-                //         otherAccount.address,
-                //         tokenId)
-                // ).to.be.reverted;
+                await expect(
+                    sleepingBaseBlindBox.transferFrom(
+                        owner.address,
+                        otherAccount.address,
+                        tokenId)
+                ).not.to.be.reverted;
 
             });
 
+            it("应该不可以错误操作", async function () {
+                const {
+                    sleepingBaseBlindBox,
+                    owner,
+                    sleepingBase
+                } = await loadFixture(deploySleepingBaseBlindBox);
+
+                // 为盲盒合约增加mint权限
+                let MINTER_ROLE = await sleepingBase.MINTER_ROLE()
+
+                await sleepingBase.grantRole(MINTER_ROLE, sleepingBaseBlindBox.address)
+
+                // 设置新的时间
+                let time = Math.floor(Date.now() / 1000)
+                await sleepingBaseBlindBox.setOpenAndSalesTime(timeGeneration([(time - 1000).toString(), (time - 1000).toString()]));
+
+                // 领取盲盒
+                let userMerkleData = generateMerkleData.claims[owner.address];
+                await sleepingBaseBlindBox.claim(userMerkleData.index, userMerkleData.amount, userMerkleData.proof);
+
+                let valueData = 1;
+                let tokenIdsData = ["12554203470773361529372990682287675750210981929426352078871"];
+                let urisData = ["test"]
+                let nonce = await sleepingBaseBlindBox.nonces();
+                let deadline = time * 10
+                let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
+
+                let digest = await getApprovalDigest(
+                    "SleepingBaseBlindBox",
+                    sleepingBaseBlindBox.address.toString(),
+                    {
+                        value: valueData,
+                        tokenIds: tokenIdsData,
+                        uris: urisData
+                    },
+                    nonce,
+                    deadline
+                )
+                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(privateKey.slice(2), 'hex'))
+
+                await expect(
+                    sleepingBaseBlindBox.openBoxPermit(
+                        valueData + 1,
+                        tokenIdsData,
+                        urisData,
+                        deadline+100,
+                        v,
+                        r,
+                        s)
+                ).to.be.reverted;
+
+            });
         });
     });
 });
