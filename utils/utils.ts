@@ -73,7 +73,7 @@ export async function deploySleepingBase() {
 export async function deploySleepingBaseBlindBox() {
     const [owner, otherAccount] = await ethers.getSigners();
 
-    const SleepingBaseBlindBox = await ethers.getContractFactory("contracts/flatten/SleepingBaseBlindBox.sol:SleepingBaseBlindBox");
+    const SleepingBaseBlindBox = await ethers.getContractFactory("contracts/SleepingBaseBlindBoxFacelift.sol:SleepingBaseBlindBox");
 
     runGenerateMerkleRoot();
     const {sleepingBase} = await loadFixture(deploySleepingBase);
