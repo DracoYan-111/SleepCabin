@@ -8,6 +8,7 @@
     "@nomiclabs/hardhat-etherscan": "^3.1.7",
     "@openzeppelin/contracts": "^4.8.3",
     "chai": "^4.3.7",
+    "commander": "^6.1.0",
     "ethers": "^5.7.2",
     "hardhat": "^2.14.0",
     "hardhat-abi-exporter": "^2.10.1",
