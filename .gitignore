@@ -12,3 +12,4 @@ artifacts
 otherFiles
 contracts/artifacts
 contracts/flatten
+deployments

@@ -36,16 +36,16 @@ const config: HardhatUserConfig = {
         },
         bscMain: {
             url: "https://bsc-dataseed1.binance.org",
-            accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
+            accounts: [`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`]
         },
         bscTest: {
             url: "https://data-seed-prebsc-1-s1.binance.org:8545",
-            accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
+            accounts: [`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`]
         },
         mainnet: {
             url: "https://eth.llamarpc.com",
             chainId: 1,
-            accounts: [`0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231`]
+            accounts: [`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`]
         }
     },
     // 合约版本
@@ -145,11 +145,11 @@ const config: HardhatUserConfig = {
     },
     // 多链同地址部署
     xdeploy: {
-        contract: "SwapAndDestroyMain",
+        contract: "contracts/SleepingBase.sol:SleepingBase",
         salt: "0x23e6EA497EFAAa53c40c3aD6de3c053EaE76793e24D10edA9EDd20885e361F",
-        signer: "0x161dccba36e46124af75697d2a722a16d5d56e7d96032a8a24429061e7912231",
-        networks: ["hardhat", "bscTestnet"],
-        rpcUrls: ["hardhat", "https://data-seed-prebsc-1-s1.binance.org:8545"],
+        signer: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+        networks: ["localhost"],
+        rpcUrls: ["http://127.0.0.1:8545"],
         gasLimit: 5100000,
     }
 };

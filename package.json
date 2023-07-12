@@ -2,11 +2,12 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
+    "@nomicfoundation/hardhat-ethers": "^3.0.3",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.13",
     "@nomiclabs/hardhat-etherscan": "^3.1.7",
-    "@openzeppelin/contracts": "^4.8.3",
+    "@openzeppelin/contracts": "^4.9.2",
     "chai": "^4.3.7",
     "commander": "^6.1.0",
     "ethers": "^5.7.2",
@@ -17,13 +18,13 @@
     "hardhat-deploy-ethers": "^0.3.0-beta.13",
     "hardhat-etherscan-contract-cloner": "^1.0.6",
     "hardhat-gas-reporter": "^1.0.9",
-    "xdeployer": "^1.2.5"
+    "xdeployer": "^1.2.7"
   },
   "scripts": {
     "compAndTest": "npx hardhat compile && npx hardhat test",
     "flatten": "npx hardhat flatten contracts/SleepingBaseBlindBox.sol > contracts/flatten/SleepingBaseBlindBox.sol",
     "demo-merkle-root": "ts-node scripts/generate-merkle-root.ts --input otherFiles/complex_example.json",
-    "abiBin":"solcjs contracts/flatten/SleepingBaseBlindBox.sol --optimize-runs 999999999 --bin --abi -o otherFiles/compileFile/SleepingBaseBlindBox"
+    "abiBin": "solcjs contracts/flatten/SleepingBaseBlindBox.sol --optimize-runs 999999999 --bin --abi -o otherFiles/compileFile/SleepingBaseBlindBox"
   },
   "dependencies": {
     "@uniswap/v3-core": "^1.0.1",
