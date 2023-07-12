@@ -8,7 +8,7 @@ export const PERMIT_TYPEHASH = utils.keccak256(
     utils.toUtf8Bytes('openBoxPermit(uint256 amount, uint256[] calldata tokenIds, string[] calldata uris, uint256 nonce, uint deadline)')
 )
 
-// Todo ⬇
+
 export function getDomainSeparator(name: string, tokenAddress: string) {
     return utils.keccak256(
         utils.defaultAbiCoder.encode(
@@ -19,13 +19,12 @@ export function getDomainSeparator(name: string, tokenAddress: string) {
                 ),
                 utils.keccak256(utils.toUtf8Bytes(name)),
                 utils.keccak256(utils.toUtf8Bytes('1')),
-                1, // Todo ⬅ 链id可能存在问题
+                10086,
                 tokenAddress,
             ]
         )
     )
 }
-// Todo ⬆
 
 export async function getApprovalDigest(
     tokenName: string,
@@ -74,7 +73,7 @@ export async function deploySleepingBase() {
 export async function deploySleepingBaseBlindBox() {
     const [owner, otherAccount] = await ethers.getSigners();
 
-    const SleepingBaseBlindBox = await ethers.getContractFactory("contracts/SleepingBaseBlindBoxFacelift.sol:SleepingBaseBlindBox");
+    const SleepingBaseBlindBox = await ethers.getContractFactory("contracts/flatten/SleepingBaseBlindBox.sol:SleepingBaseBlindBox");
 
     runGenerateMerkleRoot();
     const {sleepingBase} = await loadFixture(deploySleepingBase);
