@@ -93,7 +93,7 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
     function mint(address to) public onlyOwner {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
-        _safeMint(to, tokenId);
+        _mint(to, tokenId);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -115,47 +115,22 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
             revert AlreadyClaimed();
 
         // Verify the merkle proof.
-        bytes32 node = keccak256(abi.encodePacked(index, _msgSender(), amount));
-        if (!MerkleProof.verify(merkleProof, merkleRoot, node))
+        if (!MerkleProof.verify(
+            merkleProof,
+            merkleRoot,
+            keccak256(abi.encodePacked(index, _msgSender(), amount))
+        ))
             revert InvalidProof();
 
         // Mark it claimed and send the token.
         _setClaimed(index);
         for (uint256 i; i < amount;) {
+        unchecked{
             mint(_msgSender());
             ++i;
         }
-        emit Claimed(index, _msgSender(), amount);
-    }
-    /**
-    * @dev Open blind box
-    * @notice It cannot be called before the time is up,
-    *         and the interface can be locked
-    * @param amount Open blind box quantity
-    * @param tokenIds Array of token ids to be issued
-    * @param uris Array of token uri to be issued
-    */
-    function openBox(
-        uint256 amount,
-        uint256[] calldata tokenIds,
-        string[] calldata uris)
-    public
-    onlyOwner
-    whenNotPaused {
-        (uint256 openingTime,) = _getOpenAndSalesTime(openAndSalesTime);
-        if (block.timestamp < openingTime)
-            revert NotYetOpeningTime(block.timestamp);
-
-        for (uint256 i; i < amount;) {
-            uint256 balanceOf = super.balanceOf(_msgSender());
-            uint256 totalId = tokenOfOwnerByIndex(_msgSender(), balanceOf - 1);
-            // Destroy the blind box first
-            super._burn(totalId);
-            ++i;
         }
-        sleepingBase.safeMint(_msgSender(), tokenIds, uris);
-
-        emit OpenBox(block.timestamp, _msgSender(), amount);
+        emit Claimed(index, _msgSender(), amount);
     }
 
     /**
@@ -184,10 +159,8 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
 
         super.openBoxPermit(amount, tokenIds, uris, deadline, v, r, s);
         for (uint256 i; i < amount;) {
-            uint256 balanceOf = super.balanceOf(_msgSender());
-            uint256 totalId = tokenOfOwnerByIndex(_msgSender(), balanceOf - 1);
             // Destroy the blind box first
-            super._burn(totalId);
+            super._burn(tokenOfOwnerByIndex(_msgSender(), balanceOf(_msgSender()) - 1));
             ++i;
         }
 
@@ -195,7 +168,6 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
 
         emit OpenBox(block.timestamp, _msgSender(), amount);
     }
-
 
     function _setClaimed(uint256 index)
     private {
@@ -243,8 +215,6 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    // The following functions are overrides required by Solidity.
-
     function supportsInterface(bytes4 interfaceId)
     public
     view
@@ -256,7 +226,7 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
 
     /**
     * @dev See {IERC721Metadata-tokenURI}.
-     */
+    */
     function tokenURI(uint256 tokenId)
     public
     view
