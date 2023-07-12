@@ -147,6 +147,7 @@ const config: HardhatUserConfig = {
     xdeploy: {
         contract: "contracts/SleepingBase.sol:SleepingBase",
         salt: "0x23e6EA497EFAAa53c40c3aD6de3c053EaE76793e24D10edA9EDd20885e361F",
+        //constructorArgsPath: "deploy/SleepingBaseBlindBoxConstructor.ts",
         signer: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
         networks: ["localhost"],
         rpcUrls: ["http://127.0.0.1:8545"],

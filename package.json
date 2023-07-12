@@ -21,10 +21,9 @@
     "xdeployer": "^1.2.7"
   },
   "scripts": {
+    "xdeploy": "npx hardhat xdeploy",
     "compAndTest": "npx hardhat compile && npx hardhat test",
-    "flatten": "npx hardhat flatten contracts/SleepingBaseBlindBox.sol > contracts/flatten/SleepingBaseBlindBox.sol",
-    "demo-merkle-root": "ts-node scripts/generate-merkle-root.ts --input otherFiles/complex_example.json",
-    "abiBin": "solcjs contracts/flatten/SleepingBaseBlindBox.sol --optimize-runs 999999999 --bin --abi -o otherFiles/compileFile/SleepingBaseBlindBox"
+    "demo-merkle-root": "ts-node scripts/generate-merkle-root.ts --input otherFiles/complex_example.json"
   },
   "dependencies": {
     "@uniswap/v3-core": "^1.0.1",
