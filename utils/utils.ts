@@ -80,7 +80,7 @@ export async function deploySleepingBaseBlindBox() {
     let time = Math.floor(Date.now() / 1000)
     let openAndSalesTime = timeGeneration([(time + 1000).toString(), (time + 2000).toString()]);
     let tokenUri = "{\"image\": \"ipfs://QmdrJ3qoFpAw6s6cxh3JNXyrURo3UopF6p5B2ma3ZB8kTc/FCB_MASTERPIECE2_STATIC.png\"}"
-    let generateMerkleData = readGenerateMerkleData();
+    let generateMerkleData = readGenerateData('otherFiles/generateMerkle.json');
 
 
     const sleepingBaseBlindBox = await SleepingBaseBlindBox.deploy(
@@ -152,9 +152,8 @@ export function runGenerateMerkleRoot(): void {
 }
 
 // 获取文件中的默克尔信息
-export function readGenerateMerkleData(): any {
+export function readGenerateData(filePath: string): any {
     try {
-        const filePath = 'otherFiles/generateMerkle.json';
         const fileData = fs.readFileSync(filePath, {encoding: 'utf8'});
 
         return JSON.parse(fileData);
