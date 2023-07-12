@@ -127,13 +127,11 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
     external
     view
     returns (uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue) {
-    unchecked{
         uint256 data = tokenAttributes[onlyTokenId];
         rarityValue = (data >> 128) & ((1 << 64) - 1);
         moodValue = (data >> 96) & ((1 << 32) - 1);
         luckyValue = (data >> 64) & ((1 << 32) - 1);
         comfortValue = data & ((1 << 64) - 1);
-    }
     }
 
     function getTokenAttributes(uint256 onlyTokenId)
