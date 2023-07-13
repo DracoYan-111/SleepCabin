@@ -5,17 +5,14 @@ import {execSync} from "child_process";
 
 program
     .version('0.0.0')
-    .requiredOption(
-        '-i, --input <path>',
-        '-n, --net <work>',
-        '输入运行的脚本名称'
-    );
+    .requiredOption('-i, --input <path>', '输入运行的脚本名称')
+    .requiredOption('-n, --net <work>', '网络名称');
 
 program.parse(process.argv);
 
 console.log(`🩻 需要运行的脚本名称:${(program.input)}`);
 try {
-    const command = `npx hardhat test test/${program.input} --network ${program.net}`;
+    const command = `npx hardhat run deploy/${program.input} --network ${program.net}`;
     let output = execSync(command, {encoding: 'utf8'});
 
     console.log(output);
