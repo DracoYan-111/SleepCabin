@@ -39,7 +39,7 @@ const config: HardhatUserConfig = {
             accounts: [`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`]
         },
         bscTest: {
-            url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+            url: "https://bsc-testnet.publicnode.com",
             accounts: [`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`]
         },
         mainnet: {
@@ -145,12 +145,12 @@ const config: HardhatUserConfig = {
     },
     // 多链同地址部署
     xdeploy: {
-        contract: "contracts/SleepingBase.sol:SleepingBase",
-        salt: "0x23e6EA497EFAAa53c40c3aD6de3c053EaE76793e24D10edA9EDd20885e361F",
-        //constructorArgsPath: "deploy/SleepingBaseBlindBoxConstructor.ts",
+        contract: "contracts/SleepingBaseBlindBoxFacelift.sol:SleepingBaseBlindBox",
+        salt: "0x7236AAe74fBa5CfeBBAE1aDaaF8db32Bc6aeAaFfB047F13d5bea25e1eAD3bE",
+        constructorArgsPath: "deploy/SleepingBaseBlindBoxConstructor.ts",
         signer: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-        networks: ["localhost"],
-        rpcUrls: ["http://127.0.0.1:8545"],
+        networks: ["hardhat", "localhost", "bscTestnet"],
+        rpcUrls: ["hardhat", "http://127.0.0.1:8545", "https://bsc-testnet.publicnode.com"],
         gasLimit: 5100000,
     }
 };
