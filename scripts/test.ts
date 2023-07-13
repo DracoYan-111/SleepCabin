@@ -1,5 +1,6 @@
 import {ecsign} from 'ethereumjs-util'
 import {utils} from "ethers";
+import {ethers} from "hardhat";
 
 const chainId = 1;
 const contractName = "SleepingBaseBlindBox"
@@ -58,6 +59,18 @@ async function getApprovalDigest(
 }
 
 async function main() {
+
+    const [owner] = await ethers.getSigners();
+    const amount = ethers.utils.parseEther("100.0"); // 转账金额（以太币）
+    console.log(amount);
+
+    let transactions = await owner.sendTransaction({
+        to: "0x5ab8C46e98D6f86496C0b415110ABB0Cd734F6Af",
+        value: amount,
+    })
+    await transactions.wait();
+    console.log("Transfer completed.");
+
     console.log(PERMIT_TYPEHASH)
 
     console.log(getDomainSeparator());
