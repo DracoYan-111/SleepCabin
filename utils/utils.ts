@@ -1,30 +1,32 @@
-import {execSync} from "child_process";
-import {BigNumber, providers, utils} from 'ethers'
-import fs from "fs";
-import {ethers} from "hardhat";
 import {loadFixture} from "@nomicfoundation/hardhat-network-helpers";
+import {defaultAbiCoder} from "@ethersproject/abi";
+import {pack} from "@ethersproject/solidity";
+import {execSync} from "child_process";
+import * as ethersUtils from 'ethers';
+import {ethers} from "hardhat";
+import fs from "fs";
 
-export const PERMIT_TYPEHASH = utils.keccak256(
-    utils.toUtf8Bytes('openBoxPermit(uint256 amount, uint256[] calldata tokenIds, string[] calldata uris, uint256 nonce, uint deadline)')
+export const PERMIT_TYPEHASH = ethersUtils.keccak256(
+    ethersUtils.toUtf8Bytes('openBoxPermit(uint256 amount, uint256[] calldata tokenIds, string[] calldata uris, uint256 nonce, uint deadline)')
 )
 
-
 export function getDomainSeparator(name: string, tokenAddress: string) {
-    return utils.keccak256(
-        utils.defaultAbiCoder.encode(
+    return ethersUtils.keccak256(
+        defaultAbiCoder.encode(
             ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
             [
-                utils.keccak256(
-                    utils.toUtf8Bytes('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
+                ethersUtils.keccak256(
+                    ethersUtils.toUtf8Bytes('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)')
                 ),
-                utils.keccak256(utils.toUtf8Bytes(name)),
-                utils.keccak256(utils.toUtf8Bytes('1')),
+                ethersUtils.keccak256(ethersUtils.toUtf8Bytes(name)),
+                ethersUtils.keccak256(ethersUtils.toUtf8Bytes('1')),
                 10086,
                 tokenAddress,
             ]
         )
     )
 }
+
 
 export async function getApprovalDigest(
     tokenName: string,
@@ -34,15 +36,15 @@ export async function getApprovalDigest(
     deadline: number
 ): Promise<string> {
     const DOMAIN_SEPARATOR = getDomainSeparator(tokenName, tokenAddress)
-    return utils.keccak256(
-        utils.solidityPack(
+    return ethersUtils.keccak256(
+        pack(
             ['bytes1', 'bytes1', 'bytes32', 'bytes32'],
             [
                 '0x19',
                 '0x01',
                 DOMAIN_SEPARATOR,
-                utils.keccak256(
-                    utils.defaultAbiCoder.encode(
+                ethersUtils.keccak256(
+                    defaultAbiCoder.encode(
                         ['bytes32', 'uint256', 'uint256[]', 'string[]', 'uint256', 'uint256'],
                         [
                             PERMIT_TYPEHASH,
@@ -58,6 +60,7 @@ export async function getApprovalDigest(
         )
     )
 }
+
 
 // 部署 SleepingBase 合约
 export async function deploySleepingBase() {
@@ -84,7 +87,7 @@ export async function deploySleepingBaseBlindBox() {
 
 
     const sleepingBaseBlindBox = await SleepingBaseBlindBox.deploy(
-        sleepingBase.address,
+        sleepingBase.getAddress(),
         openAndSalesTime,
         tokenUri,
         generateMerkleData.merkleRoot,

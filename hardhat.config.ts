@@ -1,23 +1,24 @@
-import {HardhatUserConfig} from "hardhat/config";
 import "@nomicfoundation/hardhat-network-helpers";
-import "@nomicfoundation/hardhat-chai-matchers";
-import "hardhat-etherscan-contract-cloner";
+import {HardhatUserConfig} from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import "@nomiclabs/hardhat-etherscan";
 import "hardhat-contract-sizer";
-import 'hardhat-deploy-ethers';
 import "hardhat-gas-reporter";
 import "hardhat-abi-exporter";
 import "hardhat-docgen";
-import "hardhat-deploy";
 import "xdeployer";
-
 
 const config: HardhatUserConfig = {
     // 网络配置
     networks: {
         // hardhat 默认网络
         hardhat: {
+            // 账户配置
+            accounts: {
+                mnemonic: "test test test test test test test test test test test junk",
+                path: "m/44'/60'/0'/0",
+                initialIndex: 0,
+                count: 10
+            },
             chainId: 10086
         },
         // 本地环境
@@ -44,7 +45,6 @@ const config: HardhatUserConfig = {
         },
         mainnet: {
             url: "https://eth.llamarpc.com",
-            chainId: 1,
             accounts: [`0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`]
         }
     },
@@ -81,12 +81,6 @@ const config: HardhatUserConfig = {
             }
         ]
     },
-    // 预定义角色的帐户
-    namedAccounts: {
-        deployer: 0,
-        owner: 1,
-        spender: 2
-    },
     // gas记者
     gasReporter: {
         // 是否开启
@@ -110,24 +104,16 @@ const config: HardhatUserConfig = {
         // 按字母顺序对结果排序
         alphaSort: false,
         // 编译后是否自动输出合约大小
-        runOnCompile: false,
+        runOnCompile: true,
         // 超过大小限制是否抛出错误
         strict: true,
         // 输出合约大小
         outputFile: "otherFiles/contract-size-report.txt",
     },
-    // 文件路径
-    paths: {
-        sources: "./contracts",
-        tests: "./test",
-        cache: "./cache",
-        artifacts: "./artifacts",
-        deploy: "./deploy"
-    },
     // abi导出
     abiExporter: {
         path: "otherFiles/abi/",
-        runOnCompile: false,
+        runOnCompile: true,
         clear: true,
 
     },
@@ -135,7 +121,7 @@ const config: HardhatUserConfig = {
     docgen: {
         path: "otherFiles/document/interfaceDoc",
         clear: true,
-        runOnCompile: false
+        runOnCompile: true
     },
     // 自动化开源
     etherscan: {
@@ -145,12 +131,12 @@ const config: HardhatUserConfig = {
     },
     // 多链同地址部署
     xdeploy: {
-        contract: "contracts/SleepingBaseBlindBoxFacelift.sol:SleepingBaseBlindBox",
+        contract: "contracts/Lock.sol:Lock",
         salt: "0x7236AAe74fBa5CfeBBAE1aDaaF8db32Bc6aeAaFfB047F13d5bea25e1eAD3bE",
-        constructorArgsPath: "deploy/SleepingBaseBlindBoxConstructor.ts",
+        constructorArgsPath: "deploy/Lock.ts",
         signer: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-        networks: ["hardhat", "localhost", "bscTestnet"],
-        rpcUrls: ["hardhat", "http://127.0.0.1:8545", "https://bsc-testnet.publicnode.com"],
+        networks: ["hardhat", "localhost"],
+        rpcUrls: ["hardhat", "http://127.0.0.1:8545"],
         gasLimit: 5100000,
     }
 };

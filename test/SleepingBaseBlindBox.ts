@@ -37,7 +37,7 @@ describe("SleepingBaseBlindBox", function () {
 
             expect(
                 await sleepingBaseBlindBox.sleepingBase()
-            ).eq(sleepingBase.address);
+            ).eq(sleepingBase.target);
 
         });
     });
@@ -174,7 +174,7 @@ describe("SleepingBaseBlindBox", function () {
                 // 为盲盒合约增加mint权限
                 let MINTER_ROLE = await sleepingBase.MINTER_ROLE()
 
-                await sleepingBase.grantRole(MINTER_ROLE, sleepingBaseBlindBox.address)
+                await sleepingBase.grantRole(MINTER_ROLE, sleepingBaseBlindBox.target)
 
                 // 设置新的时间
                 let time = Math.floor(Date.now() / 1000)
@@ -197,7 +197,7 @@ describe("SleepingBaseBlindBox", function () {
 
                 let digest = await getApprovalDigest(
                     "SleepingBaseBlindBox",
-                    sleepingBaseBlindBox.address,
+                    sleepingBaseBlindBox.target.toString(),
                     {
                         value: valueData,
                         tokenIds: tokenIdsData,
@@ -241,7 +241,7 @@ describe("SleepingBaseBlindBox", function () {
                 // 为盲盒合约增加mint权限
                 let MINTER_ROLE = await sleepingBase.MINTER_ROLE()
 
-                await sleepingBase.grantRole(MINTER_ROLE, sleepingBaseBlindBox.address)
+                await sleepingBase.grantRole(MINTER_ROLE, sleepingBaseBlindBox.target)
 
                 // 设置新的时间
                 let time = Math.floor(Date.now() / 1000)
@@ -263,7 +263,7 @@ describe("SleepingBaseBlindBox", function () {
 
                 let digest = await getApprovalDigest(
                     "SleepingBaseBlindBox",
-                    sleepingBaseBlindBox.address.toString(),
+                    sleepingBaseBlindBox.target.toString(),
                     {
                         value: valueData,
                         tokenIds: tokenIdsData,
@@ -306,7 +306,7 @@ describe("SleepingBaseBlindBox", function () {
                 // 为盲盒合约增加mint权限
                 let MINTER_ROLE = await sleepingBase.MINTER_ROLE()
 
-                await sleepingBase.grantRole(MINTER_ROLE, sleepingBaseBlindBox.address)
+                await sleepingBase.grantRole(MINTER_ROLE, sleepingBaseBlindBox.target)
 
                 // 设置新的时间
                 let time = Math.floor(Date.now() / 1000)
@@ -325,7 +325,7 @@ describe("SleepingBaseBlindBox", function () {
 
                 let digest = await getApprovalDigest(
                     "SleepingBaseBlindBox",
-                    sleepingBaseBlindBox.address.toString(),
+                    sleepingBaseBlindBox.target,
                     {
                         value: valueData,
                         tokenIds: tokenIdsData,
