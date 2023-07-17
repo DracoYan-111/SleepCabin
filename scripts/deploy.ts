@@ -1,4 +1,3 @@
-import {ethers} from "hardhat";
 import {
     getApprovalDigest,
     getDomainSeparator,

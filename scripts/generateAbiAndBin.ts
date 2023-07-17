@@ -1,6 +1,5 @@
 import {program} from 'commander';
-import fs from 'fs';
-import {parseBalanceMap} from '../src/parse-balance-map';
+
 import {execSync} from "child_process";
 
 program
