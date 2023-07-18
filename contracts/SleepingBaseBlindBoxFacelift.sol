@@ -10,6 +10,10 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 
 import "./extensions/BlindBoxPermit.sol";
 
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
+// |S| |l| |e| |e| |p| |i| |n| |g| |B| |a| |s| |e| |B| |l| |i| |n| |d| |B| |o| |x|
+// +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
+
     error NotYetOpeningTime(uint256 currentTime);
     error NotYetTradingTime(uint256 currentTime);
     error AlreadyClaimed();

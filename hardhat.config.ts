@@ -131,9 +131,9 @@ const config: HardhatUserConfig = {
     },
     // 多链同地址部署
     xdeploy: {
-        contract: "contracts/Lock.sol:Lock",
-        salt: "0x7236AAe74fBa5CfeBBAE1aDaaF8db32Bc6aeAaFfB047F13d5bea25e1eAD3bE",
-        constructorArgsPath: "deploy/Lock.ts",
+        contract: "contracts/SleepingBase.sol:SleepingBase",
+        salt: "0x1D7611030F7cf7c2Ceca62C3aEC5a67Dec0Ec0Fb8e2cE2C584cFE7CD95feB8",
+        //constructorArgsPath: "deploy/Lock.ts",
         signer: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
         networks: ["hardhat", "localhost"],
         rpcUrls: ["hardhat", "http://127.0.0.1:8545"],
