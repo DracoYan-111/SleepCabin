@@ -99,7 +99,7 @@ describe("SleepingBase", function () {
             it("应该可以进行增发操作,他人相反", async function () {
                 const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
-                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76'])
+                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76', "100"])
 
                 await expect(
                     sleepingBase.safeMint(
@@ -120,7 +120,7 @@ describe("SleepingBase", function () {
             it("应该可以进行销毁操作,他人相反", async function () {
                 const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
-                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76'])
+                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76', "100"])
                 let [tokenId] = tokenIdAnalysis(combinedData);
 
                 await sleepingBase.safeMint(owner.address, [combinedData], ["test"])
@@ -138,7 +138,7 @@ describe("SleepingBase", function () {
             it("应该可以进行URI修改,他人相反", async function () {
                 const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
-                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76'])
+                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76', "100"])
                 let [tokenId] = tokenIdAnalysis(combinedData);
 
                 await sleepingBase.safeMint(owner.address, [combinedData], ["test"])
@@ -151,13 +151,30 @@ describe("SleepingBase", function () {
                     sleepingBase.connect(otherAccount).setTokenUri(tokenId, "test1")
                 ).to.be.reverted;
             });
+
+            it("应该可以进行耐久度降低,他人相反", async function () {
+                const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
+
+                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76', "100"])
+                let [tokenId] = tokenIdAnalysis(combinedData);
+
+                await sleepingBase.safeMint(owner.address, [combinedData], ["test"])
+
+                await expect(
+                    sleepingBase.setTokenDurability(tokenId, 50)
+                ).not.to.be.reverted;
+
+                await expect(
+                    sleepingBase.connect(otherAccount).setTokenDurability(tokenId, 50)
+                ).to.be.reverted;
+            });
         });
 
         describe("转账", function () {
             it("NFT拥有者应该可以转账", async function () {
                 const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
-                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76']);
+                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76', "100"]);
 
                 await sleepingBase.safeMint(owner.address, [combinedData], ["test"]);
 
@@ -176,7 +193,7 @@ describe("SleepingBase", function () {
             it("NFT未拥有者不应该可以转账", async function () {
                 const {sleepingBase, owner, otherAccount} = await loadFixture(deploySleepingBase);
 
-                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76']);
+                let combinedData = tokenIdGeneration(['2', '5', '68', '34', '76', "100"]);
                 let [tokenId] = tokenIdAnalysis(combinedData);
                 // 批转nft的转移
                 await sleepingBase.connect(otherAccount).setApprovalForAll(owner.address, true);
