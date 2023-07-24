@@ -99,29 +99,27 @@ export async function deploySleepingBaseBlindBox() {
 
 // 打包tokenId和其属性的打包值
 export function tokenIdGeneration(ages: string[]): bigint {
-    const value1: bigint = BigInt(ages[0]); // 替换为正确的 tokenID
-    const value2: bigint = BigInt(ages[1]); // 替换为正确的 token 稀有度
-    const value3: bigint = BigInt(ages[2]); // 替换为正确的 token 心情值
-    const value4: bigint = BigInt(ages[3]); // 替换为正确的 token 幸运值
-    const value5: bigint = BigInt(ages[4]); // 替换为正确的 token 舒适度
+    let tokenId: bigint = 0n;
 
-    const shift192: bigint = value1 << 192n;
-    const shift128: bigint = value2 << 128n;
-    const shift96: bigint = value3 << 96n;
-    const shift64: bigint = value4 << 64n;
+    for (let i = 0; i < ages.length; i++) {
+        const ageBigInt: bigint = BigInt(ages[i]);
+        tokenId |= ageBigInt << (BigInt(i) * 32n);
+    }
 
-    return shift192 | shift128 | shift96 | shift64 | value5
+    return tokenId;
 }
 
 // 解析tokenId和其属性的打包值
-export function tokenIdAnalysis(data: bigint): [bigint, bigint, bigint, bigint, bigint] {
-    const tokenId: bigint = data >> 192n;
-    const rarityValue: bigint = (data >> 128n) & ((1n << 64n) - 1n);
-    const moodValue: bigint = (data >> 96n) & ((1n << 32n) - 1n);
-    const luckyValue: bigint = (data >> 64n) & ((1n << 32n) - 1n);
-    const comfortValue: bigint = data & ((1n << 64n) - 1n);
+export function tokenIdAnalysis(data: bigint): [bigint, bigint, bigint, bigint, bigint, bigint] {
+    const ages: bigint[] = [];
+    const mask = BigInt(2 ** 32 - 1);
 
-    return [tokenId, rarityValue, moodValue, luckyValue, comfortValue];
+    for (let i = 0; i < 6; i++) {
+        const age = (data >> BigInt(i * 32)) & mask;
+        ages.push(age);
+    }
+
+    return ages;
 }
 
 // 生成打开时间和交易时间的打包值
