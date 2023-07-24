@@ -11,6 +11,10 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 // +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
 
 contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC721URIStorage {
+    /* ========== EVENTS ========== */
+
+    event DurabilityReduction(uint256 tokenId, uint256 oldDurability, uint256 newDurability);
+
     /* ========== STATE VARIABLES ========== */
 
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -88,6 +92,29 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
         _setTokenURI(tokenId, uri);
     }
 
+    /**
+    * @dev Set token durable
+    * @param tokenId Token id
+    * @param newDurability Token new durability
+    */
+    function setTokenDurability(uint256 tokenId, uint256 newDurability)
+    public
+    onlyRole(MINTER_ROLE)
+    {
+        uint256[6] memory ages;
+        (ages[0]) = _getTokenId(tokenAttributes[tokenId]);
+        (ages[1],
+        ages[2],
+        ages[3],
+        ages[4],
+        ages[5]) = getIdAndAttributes(tokenId);
+
+        emit DurabilityReduction(tokenId, ages[5], newDurability);
+
+        ages[5] = newDurability;
+        tokenAttributes[tokenId] = getTokenIdGeneration(ages);
+
+    }
     /* ========== VIEWS FUNCTION ========== */
 
     function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
@@ -119,19 +146,35 @@ contract SleepingBase is ERC721, Pausable, AccessControl, ERC721Enumerable, ERC7
     pure
     returns (uint256 tokenId){
     unchecked{
-        tokenId = data >> 192;
+        tokenId = (data >> (0 * 32)) & 0xFFFFFFFF;
     }
     }
 
     function getIdAndAttributes(uint256 onlyTokenId)
-    external
+    public
     view
-    returns (uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue) {
+    returns (uint256 rarityValue, uint256 moodValue, uint256 luckyValue, uint256 comfortValue, uint256 durability) {
         uint256 data = tokenAttributes[onlyTokenId];
-        rarityValue = (data >> 128) & ((1 << 64) - 1);
-        moodValue = (data >> 96) & ((1 << 32) - 1);
-        luckyValue = (data >> 64) & ((1 << 32) - 1);
-        comfortValue = data & ((1 << 64) - 1);
+        uint256[6] memory ages;
+        for (uint256 i; i < 6;) {
+            ages[i] = (data >> (i * 32)) & 0xFFFFFFFF;
+            ++i;
+        }
+        rarityValue = ages[1];
+        moodValue = ages[2];
+        luckyValue = ages[3];
+        comfortValue = ages[4];
+        durability = ages[5];
+    }
+
+    function getTokenIdGeneration(uint256[6] memory ages)
+    public
+    pure
+    returns (uint256 tokenId) {
+        for (uint256 i; i < ages.length;) {
+            tokenId |= ages[i] << (i * 32);
+            ++i;
+        }
     }
 
     function getTokenAttributes(uint256 onlyTokenId)
