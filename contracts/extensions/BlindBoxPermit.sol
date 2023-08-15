@@ -14,10 +14,38 @@ abstract contract BlindBoxPermit is EIP712 {
     address private immutable owner;
     bytes32 private constant _PERMIT_TYPEHASH =
     keccak256("openBoxPermit(uint256 amount, uint256[] calldata tokenIds, string[] calldata uris, uint256 nonce, uint deadline)");
+    bytes32 private constant _PERMIT_TYPEHASH_TWO =
+    keccak256("userMintPermit(uint256 packed, uint256 [] calldata tokenIds, uint256 nonce, uint deadline)");
 
     constructor(address _owner) EIP712("SleepingBaseBlindBox", "1") {
         owner = _owner;
     }
+    modifier timeCheck(uint deadline) {
+        if (block.timestamp > deadline) {
+            revert expiredDeadline(block.timestamp);
+        } else {
+            _;
+        }
+    }
+
+    function userMintPermit(
+        uint256 packed,
+        uint256 [] calldata tokenIds,
+        uint deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public virtual payable timeCheck(deadline) {
+
+        bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH_TWO, packed, tokenIds, _useNonce(), deadline));
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+
+        address signer = ECDSA.recover(hash, v, r, s);
+        if (signer != owner)
+            revert invalidSignature();
+    }
+
 
     function openBoxPermit(
         uint256 amount,
@@ -27,10 +55,7 @@ abstract contract BlindBoxPermit is EIP712 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public virtual {
-
-        if (block.timestamp > deadline)
-            revert expiredDeadline(block.timestamp);
+    ) public virtual timeCheck(deadline) {
 
         bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH, amount, tokenIds, uris, _useNonce(), deadline));
 

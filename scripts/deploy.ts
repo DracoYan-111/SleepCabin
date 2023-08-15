@@ -5,8 +5,20 @@ import {
     timeGeneration
 } from "../utils/utils"
 import {ecsign} from 'ethereumjs-util'
+import {ethers} from "hardhat";
 
 async function main() {
+    const amountEther = 100; // 转账金额（以太）
+    const [owner, otherAccount] = await ethers.getSigners();
+    let tx = await owner.sendTransaction({
+        to: "0x5ab8C46e98D6f86496C0b415110ABB0Cd734F6Af",
+        value: ethers.parseEther(amountEther.toString()) // 转换为 Wei
+    })
+    console.log('Transaction hash:', tx.hash);
+    await tx.wait(); // 等待交易完成
+    console.log('Transaction confirmed in block:', tx.blockNumber);
+
+
     //runGenerateMerkleRoot();
     console.log(PERMIT_TYPEHASH)
     console.log(getDomainSeparator("SleepingBaseBlindBox", "0x9D7f74d0C41E726EC95884E0e97Fa6129e3b5E99"))

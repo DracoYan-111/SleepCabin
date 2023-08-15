@@ -94,7 +94,7 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
     * @notice Called only on exception
     * @param to Recipient address
     */
-    function mint(address to) public onlyOwner {
+    function mint(address to) public  {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _mint(to, tokenId);

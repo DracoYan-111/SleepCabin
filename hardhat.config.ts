@@ -84,7 +84,7 @@ const config: HardhatUserConfig = {
     // gas记者
     gasReporter: {
         // 是否开启
-        enabled: true,
+        enabled: false,
         // 没有颜色
         noColors: true,
         // 显示运行时间
@@ -104,7 +104,7 @@ const config: HardhatUserConfig = {
         // 按字母顺序对结果排序
         alphaSort: false,
         // 编译后是否自动输出合约大小
-        runOnCompile: true,
+        runOnCompile: false,
         // 超过大小限制是否抛出错误
         strict: true,
         // 输出合约大小
@@ -113,7 +113,7 @@ const config: HardhatUserConfig = {
     // abi导出
     abiExporter: {
         path: "otherFiles/abi/",
-        runOnCompile: true,
+        runOnCompile: false,
         clear: true,
 
     },
@@ -121,7 +121,7 @@ const config: HardhatUserConfig = {
     docgen: {
         path: "otherFiles/document/interfaceDoc",
         clear: true,
-        runOnCompile: true
+        runOnCompile: false
     },
     // 自动化开源
     etherscan: {
@@ -131,13 +131,13 @@ const config: HardhatUserConfig = {
     },
     // 多链同地址部署
     xdeploy: {
-        contract: "contracts/SleepingBase.sol:SleepingBase",
-        salt: "0x1D7611030F7cf7c2Ceca62C3aEC5a67Dec0Ec0Fb8e2cE2C584cFE7CD95feB8",
-        //constructorArgsPath: "deploy/Lock.ts",
+        contract: "contracts/SleepingBaseBlindBoxFacelift.sol:SleepingBaseBlindBox",
+        salt: "0xD7b084c89faDEB109AD5fADf16eFB6Be3F5a0bAc3a2A0b8e18Ce8Bff3Cd9a8",
+        constructorArgsPath: "deploy/SleepingBaseBlindBoxConstructor.ts",
         signer: "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
-        networks: ["hardhat", "localhost"],
-        rpcUrls: ["hardhat", "http://127.0.0.1:8545"],
-        gasLimit: 5100000,
+        networks: [ "localhost"],
+        rpcUrls: [ "http://127.0.0.1:8545/"],
+        gasLimit: 11100000,
     }
 };
 

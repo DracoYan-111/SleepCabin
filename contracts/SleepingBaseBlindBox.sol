@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -12,31 +12,28 @@ import "./extensions/BlindBoxPermit.sol";
 // |S| |l| |e| |e| |p| |i| |n| |g| |B| |a| |s| |e| |B| |l| |i| |n| |d| |B| |o| |x|
 // +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+ +-+
 
-    error InsufficientBalance(uint256 balanceOf);
     error NotYetOpeningTime(uint256 currentTime);
     error NotYetTradingTime(uint256 currentTime);
-    error AlreadyClaimed();
-    error InvalidProof();
 
 interface SleepingBase {
     function safeMint(address to, uint256[] calldata tokenIds, string[] calldata uris) external;
 }
 
-contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable, BlindBoxPermit {
+contract SleepingBaseBlindBox is ERC721, ERC721Enumerable, Pausable, Ownable, BlindBoxPermit {
+    using Counters for Counters.Counter;
+
     /* ========== EVENTS ========== */
 
-    event Claimed(uint256 index, address account, uint256 amount);
+    event UserMint(address userAddress, uint256[] tokenIds, bool isFreeMint);
     event OpenBox(uint256 openTime, address userAddress, uint256 amount);
 
     /* ========== STATE VARIABLES ========== */
 
-    // This is a packed array of booleans.
-    mapping(uint256 => uint256) private claimedBitMap;
-    bytes32 public merkleRoot;
     // This is a compressed value of the turn-on time and transition time
-    uint256 private openAndSalesTime;
+    string private  _onlyTokenUri;
+    uint256 private _openAndSalesTime;
+    address public accountsReceivable;
     SleepingBase public immutable sleepingBase;
-    uint256 public immutable totalId;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -44,129 +41,64 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable, BlindBoxPermit {
         SleepingBase sleepingBase_,
         uint256 openAndSalesTime_,
         string memory tokenUri_,
-        bytes32 merkleRoot_,
-        uint256 totalId_,
-        address owner_
-
-    )ERC1155(tokenUri_)BlindBoxPermit(owner_){
-        openAndSalesTime = openAndSalesTime_;
+        address verifier_
+    )
+    ERC721("SleepingBaseBlindBox", "")
+    BlindBoxPermit(verifier_) {
+        _openAndSalesTime = openAndSalesTime_;
         sleepingBase = sleepingBase_;
-        merkleRoot = merkleRoot_;
-        totalId = totalId_;
+        _onlyTokenUri = tokenUri_;
     }
 
     /* ========== RESTRICTED FUNCTIONS ========== */
-
-    /**
-    * @dev Set open and sales time
-    * @notice Only used by Owner
-    * @param openAndSalesTime_ Open time and sales time
-    */
-    function setOpenAndSalesTime(uint256 openAndSalesTime_)
-    public
-    onlyOwner {
-        openAndSalesTime = openAndSalesTime_;
-    }
-
-    /**
-    * @dev Set merkle root
-    * @notice Only used by Owner
-    * @param merkleRoot_ Merkle root prove
-    */
-    function setMerkleRoot(bytes32 merkleRoot_)
-    public
-    onlyOwner {
-        merkleRoot = merkleRoot_;
-    }
-
-    /**
-    * @dev Lock transaction interface
-    * @notice Only used by Owner
-    */
-    function pause()
-    public
-    onlyOwner {
+    function pause() public onlyOwner {
         _pause();
     }
 
-    /**
-    * @dev Unlock transaction interface
-    * @notice Only used by Owner
-    */
-    function unpause()
-    public
-    onlyOwner {
+    function unpause() public onlyOwner {
         _unpause();
     }
 
-    /**
-    * @dev Additional method
-    * @notice Called only on exception
-    * @param account Recipient address
-    * @param amount Receive quantity
-    */
-    function mint(address account, uint256 amount)
-    public
-    onlyOwner {
-        _mint(account, totalId, amount, "");
+    function safeMint(address to, uint256 tokenId) public onlyOwner {
+        _safeMint(to, tokenId);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
     /**
-    * @dev Use a Merkle claim
-    * @notice Only supports single pick-up
-    * @param index Merkle index location
-    * @param amount Quantity available
-    * @param merkleProof Merkel Leaf Proof
-    */
-    function claim(
-        uint256 index,
-        uint256 amount,
-        bytes32[] calldata merkleProof)
-    public {
-        if (isClaimed(index))
-            revert AlreadyClaimed();
-
-        // Verify the merkle proof.
-        bytes32 node = keccak256(abi.encodePacked(index, _msgSender(), amount));
-        if (!MerkleProof.verify(merkleProof, merkleRoot, node))
-            revert InvalidProof();
-
-        // Mark it claimed and send the token.
-        _setClaimed(index);
-        _mint(_msgSender(), totalId, amount, "");
-        emit Claimed(index, _msgSender(), amount);
-    }
-
-    /**
-    * @dev Open blind box
+    * @dev user mint blind box permit
     * @notice It cannot be called before the time is up,
     *         and the interface can be locked
-    * @param amount Open blind box quantity
+    * @param packed  uint256 paymentAmount,bool isFreeMint
     * @param tokenIds Array of token ids to be issued
-    * @param uris Array of token uri to be issued
+    * @param deadline Maximum effective time
     */
-    function openBox(
-        uint256 amount,
-        uint256[] calldata tokenIds,
-        string[] calldata uris)
+    function userMintPermit(
+        uint256 packed,
+        uint256 [] calldata tokenIds,
+        uint deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
     public
-    onlyOwner
+    override
+    payable
     whenNotPaused {
-        if (super.balanceOf(_msgSender(), totalId) < amount)
-            revert InsufficientBalance(super.balanceOf(_msgSender(), totalId));
+
+        super.userMintPermit(packed, tokenIds, deadline, v, r, s);
+
+        (uint256 paymentAmount,uint128 isFreeMint) = _unpackedValue(packed);
+
+        if (isFreeMint == 0)
+            paymentAmount != msg.value ?
+            revert("unsatisfiedPayment") : safeTransferETH(accountsReceivable, paymentAmount);
 
 
-        (uint256 openingTime,) = _getOpenAndSalesTime(openAndSalesTime);
-        if (block.timestamp < openingTime)
-            revert NotYetOpeningTime(block.timestamp);
-
-        // Destroy the blind box first
-        super._burn(_msgSender(), totalId, amount);
-        sleepingBase.safeMint(_msgSender(), tokenIds, uris);
-
-        emit OpenBox(block.timestamp, _msgSender(), amount);
+        for (uint256 i; i < tokenIds.length;) {
+            _safeMint(_msgSender(), tokenIds[i]);
+        unchecked{++i;}
+        }
     }
 
     /**
@@ -189,17 +121,17 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable, BlindBoxPermit {
     public
     override
     whenNotPaused {
-        if (super.balanceOf(_msgSender(), totalId) < amount)
-            revert InsufficientBalance(super.balanceOf(_msgSender(), totalId));
-
-        (uint256 openingTime,) = _getOpenAndSalesTime(openAndSalesTime);
+        (uint256 openingTime,) = _unpackedValue(_openAndSalesTime);
         if (block.timestamp < openingTime)
             revert NotYetOpeningTime(block.timestamp);
 
         super.openBoxPermit(amount, tokenIds, uris, deadline, v, r, s);
+        for (uint256 i; i < amount;) {
+            // Destroy the blind box first
+            super._burn(tokenOfOwnerByIndex(_msgSender(), balanceOf(_msgSender()) - 1));
+        unchecked{++i;}
+        }
 
-        // Destroy the blind box first
-        super._burn(_msgSender(), totalId, amount);
         sleepingBase.safeMint(_msgSender(), tokenIds, uris);
 
         emit OpenBox(block.timestamp, _msgSender(), amount);
@@ -207,83 +139,75 @@ contract SleepingBaseBlindBox is ERC1155, Ownable, Pausable, BlindBoxPermit {
 
     /* ========== VIEWS FUNCTION ========== */
 
-    /**
-    * @dev Check if the index is picked up
-    * @notice Only returns whether it can be picked up
-    * @param index Merkle index location
-    * @return can receive
-    */
-    function isClaimed(uint256 index)
-    public
-    view
-    returns (bool){
-        uint256 claimedWordIndex = index / 256;
-        uint256 claimedBitIndex = index % 256;
-        uint256 claimedWord = claimedBitMap[claimedWordIndex];
-        uint256 mask = (1 << claimedBitIndex);
-        return claimedWord & mask == mask;
-    }
-
-    function _setClaimed(uint256 index)
-    private {
-        uint256 claimedWordIndex = index / 256;
-        uint256 claimedBitIndex = index % 256;
-        claimedBitMap[claimedWordIndex] = claimedBitMap[claimedWordIndex] | (1 << claimedBitIndex);
-    }
-
-    function _getOpenAndSalesTime(uint256 data)
+    function _unpackedValue(uint256 data)
     private
     pure
-    returns (uint256 openTime, uint128 salesTime) {
+    returns (uint256 valueOne, uint128 valueTwo) {
     unchecked{
-        openTime = uint256(uint128(data >> 128));
-        salesTime = uint128(data);
+        valueOne = uint256(uint128(data >> 128));
+        valueTwo = uint128(data);
     }
+    }
+
+    function safeTransferETH(address to, uint value) internal {
+        (bool success,) = to.call{value : value}(new bytes(0));
+        if (!success)
+            revert("ETH_TRANSFER_FAILED");
     }
 
     /* ========== OVERRIDE FUNCTIONS ========== */
 
-    function _beforeTokenTransfer(
-        address operator,
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data)
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId, uint256 batchSize)
     internal
     whenNotPaused
-    override {
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    override(ERC721, ERC721Enumerable)
+    {
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    override(ERC721, ERC721Enumerable)
+    returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 
     /**
-     * @dev See {IERC1155-safeTransferFrom}.
-     * @notice Increased unlock transaction time and lockable
+    * @dev See {IERC721Metadata-tokenURI}.
+    */
+    function tokenURI(uint256 tokenId)
+    public
+    view
+    override
+    returns (string memory) {
+        super._requireMinted(tokenId);
+
+        return _onlyTokenUri;
+    }
+
+    /**
+    * @dev Transfers `tokenId` from `from` to `to`.
+     *  As opposed to {transferFrom}, this imposes no restrictions on msg.sender.
+     *
+     * Requirements:
+     *
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must be owned by `from`.
+     *
+     * Emits a {Transfer} event.
      */
-    function safeTransferFrom(
+    function _transfer(
         address from,
         address to,
-        uint256,
-        uint256 amount,
-        bytes memory data)
-    public
-    virtual
+        uint256 tokenId)
+    internal
     override {
-        (, uint256 salesTime) = _getOpenAndSalesTime(openAndSalesTime);
+        (, uint256 salesTime) = _unpackedValue(_openAndSalesTime);
         if (block.timestamp < salesTime)
             revert NotYetTradingTime(block.timestamp);
-        super.safeTransferFrom(from, to, totalId, amount, data);
+
+        super._transfer(from, to, tokenId);
     }
-
-    /**
-     * @dev See {IERC1155-safeBatchTransferFrom}.
-     */
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) public virtual override {}
 }
-
