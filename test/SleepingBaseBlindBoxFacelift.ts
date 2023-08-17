@@ -3,7 +3,7 @@ import {expect} from "chai";
 import {
     deploySleepingBaseBlindBox,
     readGenerateData,
-    getApprovalDigest,
+    getOpenBoxDigest,
     tokenIdGeneration,
     timeGeneration
 } from "../utils/utils";
@@ -195,7 +195,7 @@ describe("SleepingBaseBlindBox", function () {
                 let deadline = time * 10
                 let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
 
-                let digest = await getApprovalDigest(
+                let digest = await getOpenBoxDigest(
                     "SleepingBaseBlindBox",
                     sleepingBaseBlindBox.target.toString(),
                     {
@@ -261,7 +261,7 @@ describe("SleepingBaseBlindBox", function () {
                 let deadline = time * 10
                 let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
 
-                let digest = await getApprovalDigest(
+                let digest = await getOpenBoxDigest(
                     "SleepingBaseBlindBox",
                     sleepingBaseBlindBox.target.toString(),
                     {
@@ -323,7 +323,7 @@ describe("SleepingBaseBlindBox", function () {
                 let deadline = time * 10
                 let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
 
-                let digest = await getApprovalDigest(
+                let digest = await getOpenBoxDigest(
                     "SleepingBaseBlindBox",
                     sleepingBaseBlindBox.target,
                     {
