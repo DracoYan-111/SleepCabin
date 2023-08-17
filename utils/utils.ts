@@ -7,8 +7,13 @@ import {ethers} from "hardhat";
 import fs from "fs";
 
 export const PERMIT_TYPEHASH = ethersUtils.keccak256(
-    ethersUtils.toUtf8Bytes('openBoxPermit(uint256 amount, uint256[] calldata tokenIds, string[] calldata uris, uint256 nonce, uint deadline)')
+    ethersUtils.toUtf8Bytes('openBoxPermit(uint256 amount, address userAddress, uint256[] calldata tokenIds, string[] calldata uris, uint256 nonce, uint deadline)')
 )
+export const PERMIT_TYPEHASH_TWO = ethersUtils.keccak256(
+    ethersUtils.toUtf8Bytes('userMintPermit(address userAddress, uint256 paymentAmount, uint256[] calldata tokenIds, uint256 nonce, uint deadline)')
+)
+export const PRIVATEKEY = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
+
 
 export function getDomainSeparator(name: string, tokenAddress: string) {
     return ethersUtils.keccak256(
@@ -27,11 +32,16 @@ export function getDomainSeparator(name: string, tokenAddress: string) {
     )
 }
 
-
-export async function getApprovalDigest(
+// 生成OpenBox方法所需的签名
+export async function getOpenBoxDigest(
     tokenName: string,
     tokenAddress: string,
-    permit: { uris: string[]; tokenIds: string[]; value: number },
+    permit: {
+        amount: bigint;
+        address: string;
+        tokenIds: string[];
+        uris: string[]
+    },
     nonce: number,
     deadline: number
 ): Promise<string> {
@@ -45,10 +55,11 @@ export async function getApprovalDigest(
                 DOMAIN_SEPARATOR,
                 ethersUtils.keccak256(
                     defaultAbiCoder.encode(
-                        ['bytes32', 'uint256', 'uint256[]', 'string[]', 'uint256', 'uint256'],
+                        ['bytes32', 'uint256', "address", 'uint256[]', 'string[]', 'uint256', 'uint256'],
                         [
                             PERMIT_TYPEHASH,
-                            permit.value,
+                            permit.amount,
+                            permit.address,
                             permit.tokenIds,
                             permit.uris,
                             nonce,
@@ -61,6 +72,43 @@ export async function getApprovalDigest(
     )
 }
 
+// 生成UserMint方法所需的签名
+export async function getUserMintDigest(
+    tokenName: string,
+    tokenAddress: string,
+    permit: {
+        address: string;
+        paymentAmount: bigint;
+        tokenIds: string[]
+    },
+    nonce: number,
+    deadline: number
+): Promise<string> {
+    const DOMAIN_SEPARATOR = getDomainSeparator(tokenName, tokenAddress)
+    return ethersUtils.keccak256(
+        pack(
+            ['bytes1', 'bytes1', 'bytes32', 'bytes32'],
+            [
+                '0x19',
+                '0x01',
+                DOMAIN_SEPARATOR,
+                ethersUtils.keccak256(
+                    defaultAbiCoder.encode(
+                        ['bytes32', "address", 'uint256', 'uint256[]', 'uint256', 'uint256'],
+                        [
+                            PERMIT_TYPEHASH_TWO,
+                            permit.address,
+                            permit.paymentAmount,
+                            permit.tokenIds,
+                            nonce,
+                            deadline
+                        ]
+                    )
+                ),
+            ]
+        )
+    )
+}
 
 // 部署 SleepingBase 合约
 export async function deploySleepingBase() {
@@ -91,6 +139,28 @@ export async function deploySleepingBaseBlindBox() {
         openAndSalesTime,
         tokenUri,
         generateMerkleData.merkleRoot,
+        "0x5ab8C46e98D6f86496C0b415110ABB0Cd734F6Af"
+    );
+
+    return {sleepingBaseBlindBox, owner, otherAccount, sleepingBase, openAndSalesTime};
+}
+
+// 部署 SleepingBaseBlindBox 合约
+export async function deploySleepingBaseBlindBoxNew() {
+    const [owner, otherAccount] = await ethers.getSigners();
+
+    const SleepingBaseBlindBox = await ethers.getContractFactory("contracts/SleepingBaseBlindBox.sol:SleepingBaseBlindBox");
+
+    const {sleepingBase} = await loadFixture(deploySleepingBase);
+    let time = Math.floor(Date.now() / 1000)
+    let openAndSalesTime = timeGeneration([(time + 1000).toString(), (time + 2000).toString()]);
+    let tokenUri = "{\"image\": \"ipfs://QmdrJ3qoFpAw6s6cxh3JNXyrURo3UopF6p5B2ma3ZB8kTc/FCB_MASTERPIECE2_STATIC.png\"}"
+
+    const sleepingBaseBlindBox = await SleepingBaseBlindBox.deploy(
+        sleepingBase.getAddress(),
+        openAndSalesTime,
+        tokenUri,
+        "0x5ab8C46e98D6f86496C0b415110ABB0Cd734F6Af",
         "0x5ab8C46e98D6f86496C0b415110ABB0Cd734F6Af"
     );
 
