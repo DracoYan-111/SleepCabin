@@ -1,13 +1,25 @@
-# Sample Hardhat Project
+# SleepingBase
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
-
-Try running some of the following tasks:
-
+### Contract
 ```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
+NFT contract: ---> SleepingBase.sol
+BlindBox contract: ---> SleepingBaseBlindBox.sol
+NftStaker contract: ---> SleepingBaseNftStaker.sol
+```
+
+### Script
+```shell
+NFT contract test script: ---> test/SleepingBase.ts
+BlindBox contract test script: ---> test/SleepingBaseBlindBox.ts
+NftStaker contract test script: --->  test/SleepingBaseBlindBoxFacelift.ts
+```
+
+### Sign script
+```shell
+Contract sign script: --->  scripts/digestBlindBox.ts
+```
+
+### Util script
+```shell
+All utile script: --->  utils/utils.ts
 ```
