@@ -94,7 +94,7 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
     * @notice Called only on exception
     * @param to Recipient address
     */
-    function mint(address to) public  {
+    function mint(address to) public {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _mint(to, tokenId);
@@ -148,6 +148,7 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
     */
     function openBoxPermit(
         uint256 amount,
+        address userAddress,
         uint256[] calldata tokenIds,
         string[] calldata uris,
         uint deadline,
@@ -161,7 +162,7 @@ contract SleepingBaseBlindBox is ERC721, BlindBoxPermit, ERC721Enumerable, Pausa
         if (block.timestamp < openingTime)
             revert NotYetOpeningTime(block.timestamp);
 
-        super.openBoxPermit(amount, tokenIds, uris, deadline, v, r, s);
+        super.openBoxPermit(amount, userAddress, tokenIds, uris, deadline, v, r, s);
         for (uint256 i; i < amount;) {
             // Destroy the blind box first
             super._burn(tokenOfOwnerByIndex(_msgSender(), balanceOf(_msgSender()) - 1));
