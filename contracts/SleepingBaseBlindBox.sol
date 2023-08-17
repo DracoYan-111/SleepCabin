@@ -31,7 +31,7 @@ contract SleepingBaseBlindBox is ERC721, ERC721Enumerable, Pausable, Ownable, Bl
 
     // This is a compressed value of the turn-on time and transition time
     string private _onlyTokenUri;
-    uint256 private _openAndSalesTime;
+    uint256 public openAndSalesTime;
     address public immutable accountsReceivable;
     SleepingBase public immutable sleepingBase;
 
@@ -47,7 +47,7 @@ contract SleepingBaseBlindBox is ERC721, ERC721Enumerable, Pausable, Ownable, Bl
     ERC721("SleepingBaseBlindBox", "")
     BlindBoxPermit(verifier_) {
         accountsReceivable = accountsReceivable_;
-        _openAndSalesTime = openAndSalesTime_;
+        openAndSalesTime = openAndSalesTime_;
         sleepingBase = sleepingBase_;
         _onlyTokenUri = tokenUri_;
     }
@@ -73,7 +73,7 @@ contract SleepingBaseBlindBox is ERC721, ERC721Enumerable, Pausable, Ownable, Bl
     function setOpenAndSalesTime(uint256 openAndSalesTime_)
     public
     onlyOwner {
-        _openAndSalesTime = openAndSalesTime_;
+        openAndSalesTime = openAndSalesTime_;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -136,7 +136,7 @@ contract SleepingBaseBlindBox is ERC721, ERC721Enumerable, Pausable, Ownable, Bl
     public
     override
     whenNotPaused {
-        (uint256 openingTime,) = _unpackedValue(_openAndSalesTime);
+        (uint256 openingTime,) = _unpackedValue(openAndSalesTime);
         if (block.timestamp < openingTime)
             revert NotYetOpeningTime(block.timestamp);
 
@@ -223,7 +223,7 @@ contract SleepingBaseBlindBox is ERC721, ERC721Enumerable, Pausable, Ownable, Bl
         uint256 tokenId)
     internal
     override {
-        (, uint256 salesTime) = _unpackedValue(_openAndSalesTime);
+        (, uint256 salesTime) = _unpackedValue(openAndSalesTime);
         if (block.timestamp < salesTime)
             revert NotYetTradingTime(block.timestamp);
 
