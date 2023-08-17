@@ -1,48 +1,51 @@
 import {
-    getApprovalDigest,
-    getDomainSeparator, getOpenBoxDigest, getUserMintDigest,
-    PERMIT_TYPEHASH, PERMIT_TYPEHASH_TWO,
-    timeGeneration
+    getOpenBoxDigest,
+    getUserMintDigest,
+    PRIVATEKEY
 } from "../utils/utils"
 import {ecsign} from 'ethereumjs-util'
-import {ethers} from "hardhat";
 
 async function main() {
-    // const amountEther = 100; // 转账金额（以太）
-    // const [owner, otherAccount] = await ethers.getSigners();
-    // let tx = await owner.sendTransaction({
-    //     to: "0x5ab8C46e98D6f86496C0b415110ABB0Cd734F6Af",
-    //     value: ethers.parseEther(amountEther.toString()) // 转换为 Wei
-    // })
-    // console.log('Transaction hash:', tx.hash);
-    // await tx.wait(); // 等待交易完成
-    // console.log('Transaction confirmed in block:', tx.blockNumber);
-
-
-    //runGenerateMerkleRoot();
-    console.log(PERMIT_TYPEHASH_TWO)
-    console.log(getDomainSeparator("SleepingBaseBlindBox", "0x9D7f74d0C41E726EC95884E0e97Fa6129e3b5E99"))
-    // console.log(tokenIdGeneration(["2", "5", "16", "25", "23", "67"]));
-    let paymentAmountIsFreeMint = timeGeneration(["1688975325", "1688975325"])
-    console.log(paymentAmountIsFreeMint);
-
-
+    // mint 盲盒NFT
     const digest = await getUserMintDigest(
         "SleepingBaseBlindBox",
-        "0x9a2E12340354d2532b4247da3704D2A5d73Bd189",
+        "合约地址",
         {
-            packed: paymentAmountIsFreeMint,
-            tokenIds: ["12554203470773361529372990682287675750210981929426352078871"]
+            address: "用户地址",
+            paymentAmount: BigInt("盲盒单价"),
+            tokenIds: ["nftID"],
         },
-        0,
-        1789067245
+        1,// await sleepingBaseBlindBox.nonces()方法获取
+        1692253765 //当前时间戳+6分钟
     )
     console.log(digest)
-    let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
-    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(privateKey.slice(2), 'hex'))
+    const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(PRIVATEKEY.slice(2), 'hex'))
     console.log(v)
     console.log("0x" + r.toString("hex"))
     console.log("0x" + s.toString("hex"))
+
+    //==================== 我是分割线 ========================
+
+    // open盲盒NFT
+    const digestTwo = await getOpenBoxDigest(
+        "SleepingBaseBlindBox",
+        "合约地址",
+        {
+            amount: BigInt("打开数量"),
+            address: "用户地址",
+            tokenIds: ["新的nftId数组"],
+            uris: ["新的nftId数组"]
+        },
+        1,// await sleepingBaseBlindBox.nonces()方法获取
+        1692253765 //当前时间戳+6分钟
+    )
+    console.log(digestTwo)
+    const {vTwo, rTwo, sTwo} = ecsign(Buffer.from(digestTwo.slice(2), 'hex'), Buffer.from(PRIVATEKEY.slice(2), 'hex'))
+    console.log(vTwo)
+    console.log("0x" + rTwo.toString("hex"))
+    console.log("0x" + sTwo.toString("hex"))
+
+
 }
 
 
