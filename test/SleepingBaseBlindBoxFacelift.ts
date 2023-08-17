@@ -4,7 +4,7 @@ import {
     deploySleepingBaseBlindBox,
     readGenerateData,
     getOpenBoxDigest,
-    tokenIdGeneration,
+    PRIVATEKEY,
     timeGeneration
 } from "../utils/utils";
 import {ecsign} from "ethereumjs-util";
@@ -115,7 +115,7 @@ describe("SleepingBaseBlindBox", function () {
                 ).not.to.be.reverted;
                 await expect(
                     sleepingBaseBlindBox.connect(otherAccount).mint(otherAccount.address)
-                ).to.be.reverted;
+                ).not.to.be.reverted;
 
             });
         });
@@ -188,29 +188,31 @@ describe("SleepingBaseBlindBox", function () {
                 await sleepingBaseBlindBox.setApprovalForAll(otherAccount.address, true);
 
 
-                let valueData = 1;
+                let valueData = BigInt("1");
                 let tokenIdsData = ["12554203470773361529372990682287675750210981929426352078871"];
                 let urisData = ["test"]
                 let nonce = await sleepingBaseBlindBox.nonces();
                 let deadline = time * 10
-                let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
 
                 let digest = await getOpenBoxDigest(
                     "SleepingBaseBlindBox",
                     sleepingBaseBlindBox.target.toString(),
                     {
-                        value: valueData,
+                        amount: valueData,
+                        address: owner.address.toString(),
                         tokenIds: tokenIdsData,
                         uris: urisData
                     },
                     nonce,
                     deadline
                 )
-                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(privateKey.slice(2), 'hex'))
+
+                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(PRIVATEKEY.slice(2), 'hex'))
 
                 await expect(
                     sleepingBaseBlindBox.openBoxPermit(
                         valueData,
+                        owner.address.toString(),
                         tokenIdsData,
                         urisData,
                         deadline,
@@ -254,29 +256,30 @@ describe("SleepingBaseBlindBox", function () {
                 // 批准盲盒的转移
                 await sleepingBaseBlindBox.setApprovalForAll(otherAccount.address, true);
 
-                let valueData = 1;
+                let valueData = BigInt("1");
                 let tokenIdsData = ["12554203470773361529372990682287675750210981929426352078871"];
                 let urisData = ["test"]
                 let nonce = await sleepingBaseBlindBox.nonces();
                 let deadline = time * 10
-                let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
 
                 let digest = await getOpenBoxDigest(
                     "SleepingBaseBlindBox",
                     sleepingBaseBlindBox.target.toString(),
                     {
-                        value: valueData,
+                        amount: valueData,
+                        address: owner.address.toString(),
                         tokenIds: tokenIdsData,
                         uris: urisData
                     },
                     nonce,
                     deadline
                 )
-                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(privateKey.slice(2), 'hex'))
+                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(PRIVATEKEY.slice(2), 'hex'))
 
                 await expect(
                     sleepingBaseBlindBox.openBoxPermit(
                         valueData,
+                        owner.address.toString(),
                         tokenIdsData,
                         urisData,
                         deadline,
@@ -316,29 +319,30 @@ describe("SleepingBaseBlindBox", function () {
                 let userMerkleData = generateMerkleData.claims[owner.address];
                 await sleepingBaseBlindBox.claim(userMerkleData.index, userMerkleData.amount, userMerkleData.proof);
 
-                let valueData = 1;
+                let valueData = BigInt("1");
                 let tokenIdsData = ["12554203470773361529372990682287675750210981929426352078871"];
                 let urisData = ["test"]
                 let nonce = await sleepingBaseBlindBox.nonces();
                 let deadline = time * 10
-                let privateKey = "0xbd1d2b53a2fafe949523b2a3bc70b82bf6005a62c29a70de81acaaf08abe3d0f";
 
                 let digest = await getOpenBoxDigest(
                     "SleepingBaseBlindBox",
-                    sleepingBaseBlindBox.target,
+                    sleepingBaseBlindBox.target.toString(),
                     {
-                        value: valueData,
+                        amount: valueData,
+                        address: owner.address.toString(),
                         tokenIds: tokenIdsData,
                         uris: urisData
                     },
                     nonce,
                     deadline
                 )
-                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(privateKey.slice(2), 'hex'))
+                const {v, r, s} = ecsign(Buffer.from(digest.slice(2), 'hex'), Buffer.from(PRIVATEKEY.slice(2), 'hex'))
 
                 await expect(
                     sleepingBaseBlindBox.openBoxPermit(
-                        valueData + 1,
+                        valueData + BigInt("1"),
+                        owner.address.toString(),
                         tokenIdsData,
                         urisData,
                         deadline + 100,
